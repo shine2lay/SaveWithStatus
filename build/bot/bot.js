@@ -1,10 +1,13 @@
-var roscaProxyAbi // = roscaProxyAbi
-var roscaProxyAddress // = roscaProxyAddress
+var DB_PREFIX = 'savewithstatus_'
+var DEFAULT_COMMAND_COLOR = '#333FFF'
+var CIRCLE_ABI = [{'constant': true, 'inputs': [], 'name': 'contributionSize', 'outputs': [{'name': '', 'type': 'uint128'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'withdraw', 'outputs': [{'name': 'success', 'type': 'bool'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'startRound', 'outputs': [], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [{'name': '', 'type': 'uint256'}], 'name': 'membersAddresses', 'outputs': [{'name': '', 'type': 'address'}], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'endOfROSCA', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'currentRound', 'outputs': [{'name': '', 'type': 'uint16'}], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'roundPeriodInSecs', 'outputs': [{'name': '', 'type': 'uint256'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [{'name': 'newMember', 'type': 'address'}], 'name': 'addMember', 'outputs': [], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'contribute', 'outputs': [], 'payable': true, 'type': 'function'}, {'constant': true, 'inputs': [{'name': 'user', 'type': 'address'}], 'name': 'getParticipantBalance', 'outputs': [{'name': '', 'type': 'int256'}], 'payable': false, 'type': 'function'}, {'inputs': [{'name': 'contributionSize_', 'type': 'uint128'}], 'payable': false, 'type': 'constructor'}]
+var LendingCircle = web3.eth.contract(CIRCLE_ABI)
 
 var circleNameParam = {
   name: 'circleName',
   placeholder: 'Lending Circle Name',
-  type: status.types.TEXT
+  type: status.types.TEXT,
+  suggestions: selectCircleSuggestions
 }
 
 function circleNameSuggestions() {
@@ -51,7 +54,14 @@ var deployCommand = {
       return {markup: error}
     }
   },
+  preview: function(params, context) {
+    var message = 'Alright, creating ' + params.name + ' with a weekly contribution of ' + params.paymentAmount + ' ETH. Hold on!'
+    // Maybe we should deploy the contract here instead?
+    return {markup: status.components.text({}, message)}
+  },
   handler: function(params, context) {
+    getCircleAddress(params.name)
+    var circle = LendingCircle.at()
     // var proxyContract = web3.eth.contract(roscaProxyAbi).at(roscaProxyAddress)
     // proxyContract.create(params.name, params.paymentAmount, function(error, result) {
     //   if (error) {} // bad things
@@ -59,13 +69,28 @@ var deployCommand = {
     // })
     // not sure how we will let the user know when their thing has been mined, is there a way to do
     // drip-drip messages, or does any return value all have to be in a single message?
-  },
-  preview: function(params, context) {
-    var message = 'Alright, creating ' + params.name + ' with a weekly contribution of ' +
-      params.paymentAmount + ' ETH. Hold on!'
-    // Maybe we should deploy the contract here instead?
-    return {markup: status.components.text({}, message)}
   }
+}
+
+//
+// @TODO SET THE DEFAULTS
+//
+
+function selectCircleSuggestions(params, context) {
+  var circles = getAllCircles()
+  var touchables = circles.map(function(circle) {
+    return status.components.touchable(
+      {onPress: status.components.dispatch([status.events.SET_COMMAND_ARGUMENT, [0, circle.name]])},
+      status.components.view(
+        {style: {borderBottomWidth: 1, borderBottomColor: '#0000001f'}},
+        [status.components.text(
+          {style: {padding: 20}},
+          circle.name
+        )]
+      )
+    )
+  })
+  return {markup: status.components.scrollView({}, touchables)}
 }
 
 var joinCommand = {
@@ -77,7 +102,7 @@ var joinCommand = {
     name: 'organiserAddress',
     placeholder: 'Organiser\'s Status address',
     type: status.types.TEXT,
-    // suggestions: joinSuggestions
+    // suggestions: selectCircleSuggestions
   },
     circleNameParam
   ],
@@ -126,6 +151,7 @@ var contributeCommand = {
 var advanceCommand = {
   name: 'advance',
   title: 'Advance',
+  color: DEFAULT_COMMAND_COLOR,
   description: 'Advance a Circle to the next round',
   params: [circleNameParam],
   validator: function(params, context) {},
@@ -163,6 +189,7 @@ function userNameSuggestions(params, context) {
 var userNameCommand = {
   name: 'name',
   title: 'SetName',
+  color: DEFAULT_COMMAND_COLOR,
   description: 'Set your first name',
   params: [{
     name: 'name',
@@ -170,42 +197,73 @@ var userNameCommand = {
     type: status.types.TEXT,
     suggestions: userNameSuggestions
   }],
-  validator: function(params, context) {},
-  handler: function(params, context) {
-    return {'text-message': 'Nice one!'}
+  validator: function(params, context) {
+    if (params.name.length > 40) {
+      status.sendMessage(params.name.length)
+      return {
+        markup: status.components.text({
+          style: {
+            padding: 10,
+            backgroundColor: 'white'
+          }
+        }, 'You have a pretty long name, unfortunately you\'ll have to shorten it.')
+      }
+    }
   },
-  preview: function(params, context) {
-    // set the name in the proxy
-    return {markup: status.components.text({}, 'Alright, setting your name to: ' + params.name)}
-  }
+  handler: function(params, context) {
+    saveToDb('username', params.name)
+    status.sendMessage('Nice to meet you ' + params.name + '!')
+
+    // -- DEV --
+    saveToDb('circles', JSON.stringify([{
+      name: 'Tom\'s Super Circle',
+      address: '0xdeadbeef'
+    }, {
+      name: 'Hypotenuse',
+      address: '0x1234abcd'
+    }]))
+    // -- /DEV --
+  },
+  preview: function(params, context) {}
 }
 
 status.addListener('init', function(params, context) {
+  if (getFromDb('username') !== null) return
   // ask the proxy whether we have a name yet
   // if we don't have a name, return a little view that says we should add one
   // if we do have a name, don't return anything
-  var view = status.components.view({style: {margin: 10}}, [
-    status.components.text({style: {fontWeight: 'bold'}}, 'Hello!'),
-    status.components.text({}, 'Welcome (back) to Save With Status, we see you haven\'t added your name yet.'),
-    status.components.text({}, 'In order to make using Save With Status totally rad, we recommend setting a name, otherwise you will look like this: ' + web3.eth.accounts[0]),
-    status.components.touchable({
-      onPress: status.components.dispatch([status.events.SET_VALUE, '/name ']),
-      style: {
-        padding: 5,
-        backgroundColor: '#123AB7'
-      }
-    }, status.components.view({}, [
-      status.components.view({}, [
-        status.components.text({style: {}}, 'Set your name!')
-      ])
-    ]))
-  ])
-  return {markup: view}
+  status.sendMessage('Welcome (back) to Save With Status, we see you haven\'t set a name yet.')
+  status.sendMessage('In order to make using Save With Status totally rad, we recommend setting a name, otherwise you will look like this: ' + web3.eth.accounts[0])
+  status.sendMessage('Hit the /name command below to get the ball rolling.')
 })
 
 status.addListener('on-message-send', function() {
-  return {'text-message': 'Unfortunately I wasn\'t prpgrammed to have normal conversations. You\'ll have to issue one of the commands below to get me to do anything.'}
+  return {'text-message': 'Unfortunately I wasn\'t programmed to have normal conversations. You\'ll have to issue one of the commands below to get me to do anything.'}
 })
+
+function saveToDb(item, value) {
+  localStorage.setItem(addDbPrefix(item), value)
+}
+
+function getFromDb(item) {
+  return localStorage.getItem(addDbPrefix(item))
+}
+
+function addDbPrefix(item) {
+  return DB_PREFIX + item
+}
+
+function getCircleAddress(name) {
+  var circles = JSON.parse(getFromDb('circles'))
+  for (var i = 0; i < circles.length; i++) {
+    if (circles[i].name === name) return circles[i].address
+  }
+  return null
+}
+
+function getAllCircles() {
+  return JSON.parse(getFromDb('circles'))
+}
 
 status.response(deployCommand)
 status.response(joinCommand)
