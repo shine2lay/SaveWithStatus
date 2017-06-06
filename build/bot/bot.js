@@ -10,6 +10,24 @@ var circleNameParam = {
   suggestions: selectCircleSuggestions
 }
 
+// TODO(tom) figure out why this is not working properly when trying to set the argument
+function selectCircleSuggestions(params, context) {
+  var circles = getAllCircles()
+  var touchables = circles.map(function(circle) {
+    return status.components.touchable(
+      {onPress: status.components.dispatch([status.events.SET_COMMAND_ARGUMENT, [0, circle.name]])},
+      status.components.view(
+        {style: {borderBottomWidth: 1, borderBottomColor: '#0000001f'}},
+        [status.components.text(
+          {style: {padding: 20}},
+          circle.name
+        )]
+      )
+    )
+  })
+  return {markup: status.components.scrollView({}, touchables)}
+}
+
 function circleNameSuggestions() {
   var circleNameSuggestions = status.components.view({style: {margin: 10}}, [
     status.components.text({style: {fontWeight: 'bold'}}, 'Name your Lending Circle'),
@@ -26,6 +44,15 @@ function paymentAmountSuggestions() {
     status.components.text({style: {marginTop: 10}}, 'Try to choose an amount which isn\'t too expensive! There\'s a maximum of 10 ETH to prevent you going overboard, we know what you\'re like, big spender.')
   ])
   return {markup: paymentAmountSuggestions}
+}
+
+function contractAddressSuggestions(params, context) {
+  var circleNameSuggestions = status.components.view({style: {margin: 10}}, [
+    status.components.text({style: {fontWeight: 'bold'}}, 'Contract Address'),
+    status.components.text({style: {marginTop: 10}}, 'This is the public contract address of the Lending Circle.'),
+    status.components.text({style: {marginTop: 10}}, 'It should have been given to you by the creator, best give them a prod if you don\'t have it :)')
+  ])
+  return {markup: circleNameSuggestions}
 }
 
 var deployCommand = {
@@ -48,7 +75,7 @@ var deployCommand = {
     var error
     if (params.paymentAmount < 0.001) {
       error = status.components.validationMessage(
-        'Error',
+        'Not enough ETH',
         'What is this, a Lending Circle for ants?'
       )
       return {markup: error}
@@ -72,46 +99,33 @@ var deployCommand = {
   }
 }
 
-//
-// @TODO SET THE DEFAULTS
-//
-
-function selectCircleSuggestions(params, context) {
-  var circles = getAllCircles()
-  var touchables = circles.map(function(circle) {
-    return status.components.touchable(
-      {onPress: status.components.dispatch([status.events.SET_COMMAND_ARGUMENT, [0, circle.name]])},
-      status.components.view(
-        {style: {borderBottomWidth: 1, borderBottomColor: '#0000001f'}},
-        [status.components.text(
-          {style: {padding: 20}},
-          circle.name
-        )]
-      )
-    )
-  })
-  return {markup: status.components.scrollView({}, touchables)}
-}
-
 var joinCommand = {
   name: 'join',
   title: 'Join',
   description: 'Join an existing Lending Circle',
   sequentialParams: true,
   params: [{
-    name: 'organiserAddress',
-    placeholder: 'Organiser\'s Status address',
+    name: 'contractAddress',
+    placeholder: 'Contract Address',
     type: status.types.TEXT,
-    // suggestions: selectCircleSuggestions
+    suggestions: contractAddressSuggestions
   },
     circleNameParam
   ],
-  validator: function(params, context) {},
-  handler: function(params, context) {},
-  preview: function(params, context) {
-    var message = 'Okay, hang on while we try to join "' + params.circleName + '" for you. Shouldn\'t be too long.'
-    return {markup: status.components.text({}, message)}
-  }
+  validator: function(params, context) {
+    if (!web3.isAddress(params.contractAddress)) {
+      return {markup: status.components.validationMessage(
+        'Not a real contract address',
+        'Maybe you made a typo? We recommend copy & paste.'
+      )}
+    }
+    // check that the contract address actually exists
+    // check that the name can be added to our list as an object param
+  },
+  preview: function(params, context) {},
+  handler: function(params, context) {
+    status.sendMessage('Okay, hang on while we try to join "' + params.circleName + '" for you. Shouldn\'t be too long.')
+  },
 }
 
 var statsCommand = {
@@ -140,11 +154,17 @@ var contributeCommand = {
   description: 'Contribute to a Lending Circle',
   params: [circleNameParam],
   validator: function(params, context) {}, // not sure how useful these validators will be when we have name inputs
-  handler: function(params, context) {},
-  preview: function(params, context) {
-    // get the proxy contract with web3
-    // call the contribute method on the proxy with the circle name
-    // return the txhash(?) to the user
+  preview: function(params, context) {},
+  handler: function(params, context) {
+    var circleAddress = getCircleAddress(params.circleName)
+    // get the contract
+    var circle = LendingCircle.at(circleAddress)
+
+    // contribute here is the name of the function in the smart contract
+    // the callback happens when the transaction has been sent
+    circle.contribute(function(e, txHash) {
+      status.sendMessage('Your contribution is on its way!')
+    })
   }
 }
 
