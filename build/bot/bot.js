@@ -10,7 +10,6 @@ var circleNameParam = {
   suggestions: selectCircleSuggestions
 }
 
-// TODO(tom) figure out why this is not working properly when trying to set the argument
 function selectCircleSuggestions(params, context) {
   var circles = getAllCircles()
   var touchables = circles.map(function(circle) {
@@ -25,10 +24,30 @@ function selectCircleSuggestions(params, context) {
       )
     )
   })
-  return {markup: status.components.scrollView({}, touchables)}
+  return {markup: status.components.scrollView({
+    // this prop is necessary to make sure that the first tap doesn't just close the keyboard!
+    keyboardShouldPersistTaps: 'always',
+  }, touchables)}
 }
 
+// TODO(tom) figure out why this does not work properly
+// function helpAsSuggestions(title, paragraphs) {
+//   var helpTitleStyle = {style: {fontWeight: 'bold'}}
+//   var helpParagraphStyle = {style: {marginTop: 10}}
+//   var components = [status.components.text(helpTitleStyle, title)]
+//   for (var i = 0; i < paragraphs.length; i++) {
+//     components.push(status.components.text(helpParagraphStyle, paragraphs[i]))
+//   }
+//   var markup = status.components.view({style: {margin: 10}}, components)
+//   return {markup: markup}
+// }
+
 function circleNameSuggestions() {
+  // return {markup: helpAsSuggestions(
+  //   'Name your Lending Circle',
+  //   ['This will help other folks find it easily once they know your Status address.',
+  //     'You could call it "Super Status Savings" or something equally fun!'])
+  // }
   var circleNameSuggestions = status.components.view({style: {margin: 10}}, [
     status.components.text({style: {fontWeight: 'bold'}}, 'Name your Lending Circle'),
     status.components.text({style: {marginTop: 10}}, 'This will help other folks find it easily once they know your Status address.'),
@@ -38,6 +57,11 @@ function circleNameSuggestions() {
 }
 
 function paymentAmountSuggestions() {
+  // return {markup: helpAsSuggestions(
+  //   'How much ETH/day?',
+  //   ['This is the amount of ETH which everyone should contribute to the circle per week.',
+  //     'Try to choose an amount which isn\'t too expensive! There\'s a maximum of 10 ETH to prevent you going overboard, we know what you\'re like, big spender.']
+  // )}
   var paymentAmountSuggestions = status.components.view({style: {margin: 10}}, [
     status.components.text({style: {fontWeight: 'bold'}}, 'How much ETH/week?'),
     status.components.text({style: {marginTop: 10}}, 'This is the amount of ETH which everyone should contribute to the circle per week.'),
@@ -47,6 +71,11 @@ function paymentAmountSuggestions() {
 }
 
 function contractAddressSuggestions(params, context) {
+  // return {markup: helpAsSuggestions(
+  //   'Contract Address',
+  //   ['This is the public contract address of the Lending Circle.',
+  //     'It should have been given to you by the creator, best give them a prod if you don\'t have it :)']
+  // )}
   var circleNameSuggestions = status.components.view({style: {margin: 10}}, [
     status.components.text({style: {fontWeight: 'bold'}}, 'Contract Address'),
     status.components.text({style: {marginTop: 10}}, 'This is the public contract address of the Lending Circle.'),
@@ -59,6 +88,7 @@ var deployCommand = {
   name: 'create',
   title: 'Create',
   description: 'Create a new Lending Circle',
+  color: DEFAULT_COMMAND_COLOR,
   sequentialParams: true,
   params: [{
     name: 'name',
@@ -103,6 +133,7 @@ var joinCommand = {
   name: 'join',
   title: 'Join',
   description: 'Join an existing Lending Circle',
+  color: DEFAULT_COMMAND_COLOR,
   sequentialParams: true,
   params: [{
     name: 'contractAddress',
@@ -132,6 +163,7 @@ var statsCommand = {
   name: 'stats',
   title: 'Stats',
   description: 'Check the stats of a Lending Circle',
+  color: DEFAULT_COMMAND_COLOR,
   params: [circleNameParam],
   validator: function(params, context) {},
   handler: function(params, context) {}, // i don't think we can use this method here, since we can't return text from it :/
@@ -152,14 +184,12 @@ var contributeCommand = {
   name: 'contribute',
   title: 'Contribute',
   description: 'Contribute to a Lending Circle',
+  color: DEFAULT_COMMAND_COLOR,
   params: [circleNameParam],
   validator: function(params, context) {}, // not sure how useful these validators will be when we have name inputs
   preview: function(params, context) {},
   handler: function(params, context) {
-    var circleAddress = getCircleAddress(params.circleName)
-    // get the contract
-    var circle = LendingCircle.at(circleAddress)
-
+    var circle = getCircleFromSelection(params.circleName)
     // contribute here is the name of the function in the smart contract
     // the callback happens when the transaction has been sent
     circle.contribute(function(e, txHash) {
@@ -175,35 +205,26 @@ var advanceCommand = {
   description: 'Advance a Circle to the next round',
   params: [circleNameParam],
   validator: function(params, context) {},
-  handler: function(params, context) {},
-  preview: function(params, context) {
-    // get the proxy contract with web3,
-    // call the advance method on the proxy with the circle name
-    // return the txhash to the user
-  }
+  preview: function(params, context) {},
+  handler: function(params, context) {}
 }
 
 var withdrawCommand = {
   name: 'withdraw',
   title: 'Withdraw',
   description: 'Withdraw from a Lending Circle',
+  color: DEFAULT_COMMAND_COLOR,
   params: [circleNameParam],
-  validator: function(params, context) {},
-  handler: function(params, context) {},
-  preview: function(params, context) {
-    // get the proxy
-    // call withdraw with the circle name
-    // return the txhash
+  validator: function(params, context) {
+    // validate whether they actually have anything to withdraw from this contract?
+  },
+  preview: function(params, context) {},
+  handler: function(params, context) {
+    var circle = getCircleFromSelection(params.name)
+    circle.withdraw(function(e, res) {
+      status.sendMessage('Withdrawal logged, your funds should show up in a couple of minutes.')
+    })
   }
-}
-
-function userNameSuggestions(params, context) {
-  var paymentAmountSuggestions = status.components.view({style: {margin: 10}}, [
-    status.components.text({style: {fontWeight: 'bold'}}, 'Set Your Name'),
-    status.components.text({style: {marginTop: 10}}, 'Don\'t worry, this won\'t be used for anything nefarious.'),
-    status.components.text({style: {marginTop: 10}}, 'However your name will be publicly visible, so don\'t be too specific! We suggest only using your first name.')
-  ])
-  return {markup: paymentAmountSuggestions}
 }
 
 var userNameCommand = {
@@ -214,20 +235,24 @@ var userNameCommand = {
   params: [{
     name: 'name',
     placeholder: 'Your first name',
-    type: status.types.TEXT,
-    suggestions: userNameSuggestions
+    type: status.types.TEXT
   }],
   validator: function(params, context) {
-    if (params.name.length > 40) {
-      status.sendMessage(params.name.length)
-      return {
-        markup: status.components.text({
-          style: {
-            padding: 10,
-            backgroundColor: 'white'
-          }
-        }, 'You have a pretty long name, unfortunately you\'ll have to shorten it.')
-      }
+    var error
+    // also check that the name has no spaces/special chars in
+    if (!/^[a-zA-Z0-9]{4,20}$/.test(params.name)) {
+      error = status.components.validationMessage(
+        'Uh oh',
+        'I\'m only able to save English alphanumeric characters, blame my programmers...'
+      )
+      return {markup: error}
+    }
+    if (params.name.length > 20) {
+      error = status.components.validationMessage(
+        'Ooh, could you shorten that a little?',
+        'There\'s a limit to how much I can remember, something something goldfish joke'
+      )
+      return {markup: error}
     }
   },
   handler: function(params, context) {
@@ -253,7 +278,7 @@ status.addListener('init', function(params, context) {
   // if we don't have a name, return a little view that says we should add one
   // if we do have a name, don't return anything
   status.sendMessage('Welcome (back) to Save With Status, we see you haven\'t set a name yet.')
-  status.sendMessage('In order to make using Save With Status totally rad, we recommend setting a name, otherwise you will look like this: ' + web3.eth.accounts[0])
+  status.sendMessage('In order to make using Save With Status totally rad, we recommend setting a nickname, otherwise you will look like this: ' + web3.eth.accounts[0])
   status.sendMessage('Hit the /name command below to get the ball rolling.')
 })
 
@@ -279,6 +304,10 @@ function getCircleAddress(name) {
     if (circles[i].name === name) return circles[i].address
   }
   return null
+}
+
+function getCircleFromSelection(name) {
+  return LendingCircle.at(getCircleAddress(name))
 }
 
 function getAllCircles() {
