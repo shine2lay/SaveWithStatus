@@ -30,7 +30,7 @@ class App extends Component {
 
     // Get the RPC provider and setup our SimpleStorage contract.
     var {host, port} = Config.networks[process.env.NODE_ENV]
-    
+
     const provider = new Web3.providers.HttpProvider('http://' + host + ':' + port)
     const contract = require('truffle-contract')
     const simpleStorage = contract(SimpleStorageContract)
@@ -44,6 +44,7 @@ class App extends Component {
 
     // Get accounts.
     web3RPC.eth.getAccounts(function(error, accounts) {
+      if (error) throw new Error(error)
       console.log(accounts)
 
       simpleStorage.deployed().then(function(instance) {
@@ -66,11 +67,11 @@ class App extends Component {
       <div className="App">
         <nav className="navbar pure-menu pure-menu-horizontal">
             <a href="#" className="pure-menu-heading pure-menu-link">Truffle Box</a>
-            {/*}<ul className="pure-menu-list">
+            {/* }<ul className="pure-menu-list">
                 <li className="pure-menu-item"><a href="#" className="pure-menu-link">News</a></li>
                 <li className="pure-menu-item"><a href="#" className="pure-menu-link">Sports</a></li>
                 <li className="pure-menu-item"><a href="#" className="pure-menu-link">Finance</a></li>
-            </ul>*/}
+            </ul> */}
         </nav>
 
         <main className="container">
@@ -86,7 +87,7 @@ class App extends Component {
           </div>
         </main>
       </div>
-    );
+    )
   }
 }
 
