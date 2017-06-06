@@ -166,8 +166,8 @@ var statsCommand = {
   color: DEFAULT_COMMAND_COLOR,
   params: [circleNameParam],
   validator: function(params, context) {},
-  handler: function(params, context) {}, // i don't think we can use this method here, since we can't return text from it :/
-  preview: function(params, context) {
+  preview: function(params, context) {},
+  handler: function(params, context) {
     // get the proxy contract with web3
     // call the stats method on the proxy with the circle name
     // return the variables to the chat
