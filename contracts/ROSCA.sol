@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.8;
 /**
  * @title ROSCA on a blockchain. ver. Lite
  *
@@ -207,7 +207,7 @@ contract ROSCA {
         }
 
         uint256 amountToWithdraw = totalCredit - totalDebit;
-        uint256 amountAvailable = getBalance();
+        uint256 amountAvailable = this.balance;
 
         if (amountAvailable < amountToWithdraw) {
             // This may happen if some participants are delinquent.
