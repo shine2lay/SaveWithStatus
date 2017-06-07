@@ -68,22 +68,24 @@ contract ROSCA {
       * it's safe to use.
       */
     function ROSCA(
-    uint128 contributionSize_) {
+    uint128 contributionSize_,
+    string userName) {
         roundPeriodInSecs = 86400;
 
         contributionSize = contributionSize_;
 
         startTime = now;
 
-        addMember(msg.sender);
+        addMember(msg.sender, userName);
     }
 
-    function addMember(address newMember) public {
+    function addMember(address newMember, string userName) public {
         if (members[newMember].alive) {  // already registered
             throw;
         }
         members[newMember] = User({paid: false , credit: 0, alive: true, debt: false});
         membersAddresses.push(newMember);
+        memberNames[newMember] = userName;
     }
 
     /**
@@ -239,8 +241,11 @@ contract ROSCA {
         return totalCredit - totalDebit;
     }
 
+    function getMemberCount() returns (uint memberCount) {
+        return memberAddresses.length;
+    }
 
-    function getUserName(address userAddress) returns (string ) {
-        return memberNames[userAddress];
+    function getUserName(uint index) returns (string userName) {
+        return memberNames[memberAddresses[index]];
     }
 }
