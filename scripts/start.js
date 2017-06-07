@@ -42,7 +42,7 @@ var devCliMessages = {}
 var BOT_DIR = '/public/bot' // should start with slash
 var BOT_SITE_PATH = '/bot/bot.js' // should start with slash
 var BOT_WHISPER_IDENTITY = 'botbotbot'
-var BOT_NAME = 'MR BOTTS'
+var BOT_NAME = 'Save With Status'
 
 // You can safely remove this after ejecting.
 // We only use this block for testing of Create React App itself:

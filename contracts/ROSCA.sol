@@ -29,10 +29,10 @@ contract ROSCA {
     mapping(address => string) memberNames;
 
     struct User {
-    uint256 credit;  // amount of funds user has contributed - winnings (not including discounts) so far
-    bool debt; // true if user won the pot while not in good standing and is still not in good standing
-    bool paid; // yes if the member had won a Round
-    bool alive; // needed to check if a member is indeed a member
+        uint256 credit;  // amount of funds user has contributed - winnings (not including discounts) so far
+        bool debt; // true if user won the pot while not in good standing and is still not in good standing
+        bool paid; // yes if the member had won a Round
+        bool alive; // needed to check if a member is indeed a member
     }
 
     ////////////
@@ -242,10 +242,10 @@ contract ROSCA {
     }
 
     function getMemberCount() returns (uint memberCount) {
-        return memberAddresses.length;
+        return membersAddresses.length;
     }
 
     function getUserName(uint index) returns (string userName) {
-        return memberNames[memberAddresses[index]];
+        return memberNames[membersAddresses[index]];
     }
 }

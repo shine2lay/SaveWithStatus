@@ -1,17 +1,24 @@
 var DB_PREFIX = 'savewithstatus_'
 var DEFAULT_COMMAND_COLOR = '#333FFF'
-var CIRCLE_ABI = [{'constant': true, 'inputs': [], 'name': 'contributionSize', 'outputs': [{'name': '', 'type': 'uint128'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'withdraw', 'outputs': [{'name': 'success', 'type': 'bool'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'startRound', 'outputs': [], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [{'name': '', 'type': 'uint256'}], 'name': 'membersAddresses', 'outputs': [{'name': '', 'type': 'address'}], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'endOfROSCA', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'currentRound', 'outputs': [{'name': '', 'type': 'uint16'}], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'roundPeriodInSecs', 'outputs': [{'name': '', 'type': 'uint256'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [{'name': 'newMember', 'type': 'address'}], 'name': 'addMember', 'outputs': [], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'contribute', 'outputs': [], 'payable': true, 'type': 'function'}, {'constant': true, 'inputs': [{'name': 'user', 'type': 'address'}], 'name': 'getParticipantBalance', 'outputs': [{'name': '', 'type': 'int256'}], 'payable': false, 'type': 'function'}, {'inputs': [{'name': 'contributionSize_', 'type': 'uint128'}], 'payable': false, 'type': 'constructor'}]
+var CIRCLE_ABI = [{'constant': true, 'inputs': [], 'name': 'contributionSize', 'outputs': [{'name': '', 'type': 'uint128'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'withdraw', 'outputs': [{'name': 'success', 'type': 'bool'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'startRound', 'outputs': [], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [{'name': '', 'type': 'uint256'}], 'name': 'membersAddresses', 'outputs': [{'name': '', 'type': 'address'}], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'endOfROSCA', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'currentRound', 'outputs': [{'name': '', 'type': 'uint16'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [{'name': 'index', 'type': 'uint256'}], 'name': 'getUserName', 'outputs': [{'name': 'userName', 'type': 'string'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'getMemberCount', 'outputs': [{'name': 'memberCount', 'type': 'uint256'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [{'name': 'newMember', 'type': 'address'}, {'name': 'userName', 'type': 'string'}], 'name': 'addMember', 'outputs': [], 'payable': false, 'type': 'function'}, {'constant': true, 'inputs': [], 'name': 'roundPeriodInSecs', 'outputs': [{'name': '', 'type': 'uint256'}], 'payable': false, 'type': 'function'}, {'constant': false, 'inputs': [], 'name': 'contribute', 'outputs': [], 'payable': true, 'type': 'function'}, {'constant': true, 'inputs': [{'name': 'user', 'type': 'address'}], 'name': 'getParticipantBalance', 'outputs': [{'name': '', 'type': 'int256'}], 'payable': false, 'type': 'function'}, {'inputs': [{'name': 'contributionSize_', 'type': 'uint128'}, {'name': 'userName', 'type': 'string'}], 'payable': false, 'type': 'constructor'}]
+var CIRCLE_BYTECODE = '0x60606040526000600360006101000a81548160ff0219169083151502179055506000600360016101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555034156200006a57fe5b6040516200195038038062001950833981016040528080519060200190919080518201919050505b6201518060008190555081600160026101000a8154816fffffffffffffffffffffffffffffffff02191690836fffffffffffffffffffffffffffffffff16021790555042600281905550620000fc3382620001056401000000000262000987176401000000009004565b5b5050620003d8565b600560008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160029054906101000a900460ff1615620001615760006000fd5b6080604051908101604052806000815260200160001515815260200160001515815260200160011515815250600560008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000820151816000015560208201518160010160006101000a81548160ff02191690831515021790555060408201518160010160016101000a81548160ff02191690831515021790555060608201518160010160026101000a81548160ff021916908315150217905550905050600680548060010182816200024f9190620002fa565b916000526020600020900160005b84909190916101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505080600760008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000209080519060200190620002f492919062000329565b505b5050565b8154818355818115116200032457818360005260206000209182019101620003239190620003b0565b5b505050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f106200036c57805160ff19168380011785556200039d565b828001600101855582156200039d579182015b828111156200039c5782518255916020019190600101906200037f565b5b509050620003ac9190620003b0565b5090565b620003d591905b80821115620003d1576000816000905550600101620003b7565b5090565b90565b61156880620003e86000396000f300606060405236156100b8576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680633979c5ab146100ba5780633ccfd60b1461010457806355e3f0861461012e5780635ee5a3c61461014057806385860a70146101a05780638a19c8bc146101ca578063988da80f146101f8578063997072f71461029f578063c127c247146102c5578063c94177831461033e578063d7bb99ba14610364578063e9560b3b1461036e575bfe5b34156100c257fe5b6100ca6103b8565b60405180826fffffffffffffffffffffffffffffffff166fffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561010c57fe5b6101146103da565b604051808215151515815260200191505060405180910390f35b341561013657fe5b61013e610702565b005b341561014857fe5b61015e60048080359060200190919050506107ef565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34156101a857fe5b6101b061082f565b604051808215151515815260200191505060405180910390f35b34156101d257fe5b6101da610842565b604051808261ffff1661ffff16815260200191505060405180910390f35b341561020057fe5b6102166004808035906020019091905050610856565b6040518080602001828103825283818151815260200191508051906020019080838360008314610265575b80518252602083111561026557602082019150602081019050602083039250610241565b505050905090810190601f1680156102915780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b34156102a757fe5b6102af610979565b6040518082815260200191505060405180910390f35b34156102cd57fe5b61033c600480803573ffffffffffffffffffffffffffffffffffffffff1690602001909190803590602001908201803590602001908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505091905050610987565b005b341561034657fe5b61034e610b77565b6040518082815260200191505060405180910390f35b61036c610b7d565b005b341561037657fe5b6103a2600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091905050610d1d565b6040518082815260200191505060405180910390f35b600160029054906101000a90046fffffffffffffffffffffffffffffffff1681565b60006000600060006000600560003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160029054906101000a900460ff1615156104405760006000fd5b600560003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160009054906101000a900460ff1680156104a95750600360009054906101000a900460ff16155b156104b45760006000fd5b600560003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600001549350600560003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160009054906101000a900460ff1661059957600160029054906101000a90046fffffffffffffffffffffffffffffffff16600160009054906101000a900461ffff1661ffff16026fffffffffffffffffffffffffffffffff166105d2565b600160029054906101000a90046fffffffffffffffffffffffffffffffff166fffffffffffffffffffffffffffffffff16600680549050025b925083831015156105e35760006000fd5b82840391503073ffffffffffffffffffffffffffffffffffffffff163190508181101561060e578091505b81600560003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600001600082825403925050819055503373ffffffffffffffffffffffffffffffffffffffff166108fc839081150290604051809050600060405180830381858888f1935050505015156106f55781600560003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060000160008282540192505081905550600094506106fa565b600194505b5b5050505090565b6000600360009054906101000a900460ff161561071f5760006000fd5b600054600160009054906101000a900461ffff1661ffff16026002540190508042101561074c5760006000fd5b6000600160009054906101000a900461ffff1661ffff1614151561077357610772610e69565b5b600680549050600160009054906101000a900461ffff1661ffff1610156107ce576001600081819054906101000a900461ffff168092919060010191906101000a81548161ffff021916908361ffff160217905550506107ea565b6001600360006101000a81548160ff0219169083151502179055505b5b5b50565b6006818154811015156107fe57fe5b906000526020600020900160005b915054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b600360009054906101000a900460ff1681565b600160009054906101000a900461ffff1681565b61085e611457565b6007600060068481548110151561087157fe5b906000526020600020900160005b9054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000208054600181600116156101000203166002900480601f01602080910402602001604051908101604052809291908181526020018280546001816001161561010002031660029004801561096c5780601f106109415761010080835404028352916020019161096c565b820191906000526020600020905b81548152906001019060200180831161094f57829003601f168201915b505050505090505b919050565b600060068054905090505b90565b600560008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160029054906101000a900460ff16156109e25760006000fd5b6080604051908101604052806000815260200160001515815260200160001515815260200160011515815250600560008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000206000820151816000015560208201518160010160006101000a81548160ff02191690831515021790555060408201518160010160016101000a81548160ff02191690831515021790555060608201518160010160026101000a81548160ff02191690831515021790555090505060068054806001018281610ace919061146b565b916000526020600020900160005b84909190916101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505080600760008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000209080519060200190610b71929190611497565b505b5050565b60005481565b600060006000600560003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160029054906101000a900460ff161515610bdf5760006000fd5b600360009054906101000a900460ff1615610bfa5760006000fd5b600560003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002092503491508183600001600082825401925050819055508260010160009054906101000a900460ff1615610d1557600160029054906101000a90046fffffffffffffffffffffffffffffffff16600160009054906101000a900461ffff1661ffff16026fffffffffffffffffffffffffffffffff16905080600160029054906101000a90046fffffffffffffffffffffffffffffffff166fffffffffffffffffffffffffffffffff1660068054905002846000015403101515610d145760008360010160006101000a81548160ff0219169083151502179055505b5b5b5b5b505050565b600060006000600560008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600001549150600560008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160009054906101000a900460ff168015610dd15750600360009054906101000a900460ff16155b15610e1357600160029054906101000a90046fffffffffffffffffffffffffffffffff166fffffffffffffffffffffffffffffffff1660068054905002820391505b600160029054906101000a90046fffffffffffffffffffffffffffffffff16600160009054906101000a900461ffff1661ffff16026fffffffffffffffffffffffffffffffff16905080820392505b5050919050565b600060006001600160009054906101000a900461ffff1603600680549050039050610e9381610eb3565b9150610ea6826001830361ffff1661124d565b610eae611363565b5b5050565b6000600060006000600060006000600095508761ffff1642811515610ed457fe5b069350600092505b8761ffff168361ffff161015611084578761ffff168361ffff168501811515610f0157fe5b069150600682815481101515610f1357fe5b906000526020600020900160005b9054906101000a900473ffffffffffffffffffffffffffffffffffffffff169050600560008273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160019054906101000a900460ff16151561107657819450600160029054906101000a90046fffffffffffffffffffffffffffffffff16600160009054906101000a900461ffff1661ffff16026fffffffffffffffffffffffffffffffff16600560008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600001541015156110725780600360016101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550611084565b8095505b5b8280600101935050610edc565b6000600360019054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1614156112005760008673ffffffffffffffffffffffffffffffffffffffff1614806111365750600560008773ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160019054906101000a900460ff165b156111415760006000fd5b85600360016101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550600160056000600360019054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160006101000a81548160ff0219169083151502179055505b600680549050600160029054906101000a90046fffffffffffffffffffffffffffffffff166fffffffffffffffffffffffffffffffff16026004819055508496505b505050505050919050565b60068181548110151561125c57fe5b906000526020600020900160005b9054906101000a900473ffffffffffffffffffffffffffffffffffffffff1660068381548110151561129857fe5b906000526020600020900160005b6101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550600360019054906101000a900473ffffffffffffffffffffffffffffffffffffffff1660068281548110151561131457fe5b906000526020600020900160005b6101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505b5050565b60045460056000600360019054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060000160008282540192505081905550600160056000600360019054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060010160016101000a81548160ff0219169083151502179055505b565b602060405190810160405280600081525090565b815481835581811511611492578183600052602060002091820191016114919190611517565b5b505050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f106114d857805160ff1916838001178555611506565b82800160010185558215611506579182015b828111156115055782518255916020019190600101906114ea565b5b5090506115139190611517565b5090565b61153991905b8082111561153557600081600090555060010161151d565b5090565b905600a165627a7a72305820e57126663edea7f2cd7f76e55ff3328f1eb6f6f0d0a1abbe2c65ab746fce91700029'
 var LendingCircle = web3.eth.contract(CIRCLE_ABI)
 
-var circleNameParam = {
-  name: 'circleName',
-  placeholder: 'Lending Circle Name',
-  type: status.types.TEXT,
-  suggestions: selectCircleSuggestions
+function createCircleNameParam(optional) {
+  if (!optional) optional = {}
+  var circleNameParam = {
+    name: 'circleName',
+    placeholder: optional.placeholder || 'Lending Circle Name',
+    type: status.types.TEXT,
+    suggestions: optional.suggestions || selectCircleSuggestions
+  }
+  return circleNameParam
 }
 
 function selectCircleSuggestions(params, context) {
   var circles = getAllCircles()
+  var message = JSON.stringify(circles)
+  status.sendMessage(message)
   var touchables = circles.map(function(circle) {
     return status.components.touchable(
       {onPress: status.components.dispatch([status.events.SET_COMMAND_ARGUMENT, [0, circle.name]])},
@@ -30,17 +37,17 @@ function selectCircleSuggestions(params, context) {
   }, touchables)}
 }
 
-// TODO(tom) figure out why this does not work properly
-// function helpAsSuggestions(title, paragraphs) {
-//   var helpTitleStyle = {style: {fontWeight: 'bold'}}
-//   var helpParagraphStyle = {style: {marginTop: 10}}
-//   var components = [status.components.text(helpTitleStyle, title)]
-//   for (var i = 0; i < paragraphs.length; i++) {
-//     components.push(status.components.text(helpParagraphStyle, paragraphs[i]))
-//   }
-//   var markup = status.components.view({style: {margin: 10}}, components)
-//   return {markup: markup}
-// }
+// // TODO(tom) figure out why this does not work properly
+// // function helpAsSuggestions(title, paragraphs) {
+// //   var helpTitleStyle = {style: {fontWeight: 'bold'}}
+// //   var helpParagraphStyle = {style: {marginTop: 10}}
+// //   var components = [status.components.text(helpTitleStyle, title)]
+// //   for (var i = 0; i < paragraphs.length; i++) {
+// //     components.push(status.components.text(helpParagraphStyle, paragraphs[i]))
+// //   }
+// //   var markup = status.components.view({style: {margin: 10}}, components)
+// //   return {markup: markup}
+// // }
 
 function circleNameSuggestions() {
   // return {markup: helpAsSuggestions(
@@ -56,19 +63,19 @@ function circleNameSuggestions() {
   return {markup: circleNameSuggestions}
 }
 
-function paymentAmountSuggestions() {
-  // return {markup: helpAsSuggestions(
-  //   'How much ETH/day?',
-  //   ['This is the amount of ETH which everyone should contribute to the circle per week.',
-  //     'Try to choose an amount which isn\'t too expensive! There\'s a maximum of 10 ETH to prevent you going overboard, we know what you\'re like, big spender.']
-  // )}
-  var paymentAmountSuggestions = status.components.view({style: {margin: 10}}, [
-    status.components.text({style: {fontWeight: 'bold'}}, 'How much ETH/week?'),
-    status.components.text({style: {marginTop: 10}}, 'This is the amount of ETH which everyone should contribute to the circle per week.'),
-    status.components.text({style: {marginTop: 10}}, 'Try to choose an amount which isn\'t too expensive! There\'s a maximum of 10 ETH to prevent you going overboard, we know what you\'re like, big spender.')
-  ])
-  return {markup: paymentAmountSuggestions}
-}
+// function paymentAmountSuggestions() {
+//   // return {markup: helpAsSuggestions(
+//   //   'How much ETH/day?',
+//   //   ['This is the amount of ETH which everyone should contribute to the circle per week.',
+//   //     'Try to choose an amount which isn\'t too expensive! There\'s a maximum of 10 ETH to prevent you going overboard, we know what you\'re like, big spender.']
+//   // )}
+//   var paymentAmountSuggestions = status.components.view({style: {margin: 10}}, [
+//     status.components.text({style: {fontWeight: 'bold'}}, 'How much ETH/week?'),
+//     status.components.text({style: {marginTop: 10}}, 'This is the amount of ETH which everyone should contribute to the circle per week.'),
+//     status.components.text({style: {marginTop: 10}}, 'Try to choose an amount which isn\'t too expensive! There\'s a maximum of 10 ETH to prevent you going overboard, we know what you\'re like, big spender.')
+//   ])
+//   return {markup: paymentAmountSuggestions}
+// }
 
 function contractAddressSuggestions(params, context) {
   // return {markup: helpAsSuggestions(
@@ -112,21 +119,65 @@ var deployCommand = {
     }
   },
   preview: function(params, context) {
-    var message = 'Alright, creating ' + params.name + ' with a weekly contribution of ' + params.paymentAmount + ' ETH. Hold on!'
-    // Maybe we should deploy the contract here instead?
+    var message = 'Name: ' + params.name + '. Weekly contribution: ' + params.paymentAmount + ' ETH.'
     return {markup: status.components.text({}, message)}
   },
   handler: function(params, context) {
-    getCircleAddress(params.name)
-    var circle = LendingCircle.at()
-    // var proxyContract = web3.eth.contract(roscaProxyAbi).at(roscaProxyAddress)
-    // proxyContract.create(params.name, params.paymentAmount, function(error, result) {
-    //   if (error) {} // bad things
-    //   // result will be a transaction hash that we can use to poll until it has been mined
-    // })
-    // not sure how we will let the user know when their thing has been mined, is there a way to do
-    // drip-drip messages, or does any return value all have to be in a single message?
+    status.sendMessage('Ok, we just need you to confirm that, one sec...')
+    var circle = LendingCircle.new(web3.toWei(params.paymentAmount, 'ether'), getMyName(), {
+      from: web3.eth.accounts[0],
+      data: CIRCLE_BYTECODE
+    })
+    status.sendMessage('This bit might take a little while...')
+    var receipt = waitForMining(circle.transactionHash)
+    status.sendMessage('Done! Send your friends the below address and they can join your circle.')
+    status.sendMessage(receipt.contractAddress)
+    saveNewCircle({name: params.name, address: receipt.contractAddress, participants: [{name: getMyName(), address: web3.eth.accounts[0]}]})
   }
+}
+
+function waitForMining(txHash) {
+  var mined = false
+  var receipt
+  while (!mined) {
+    receipt = web3.eth.getTransactionReceipt(txHash)
+    if (!receipt) continue
+    if (receipt.contractAddress || receipt.gasUsed) mined = true
+  }
+  return receipt
+}
+
+function saveNewCircle(newCircle) {
+  var circles = getAllCircles()
+  if (!Array.isArray(circles)) {
+    circles = []
+  } else if (circleAlreadySaved(circles, newCircle.address)) {
+    circles = deleteOldCircle(circles, newCircle.address)
+  }
+  circles.push(newCircle)
+  saveAllCircles(circles)
+}
+
+function circleAlreadySaved(circles, newCircleAddress) {
+  return getCircleIndex(circles, newCircleAddress) !== -1
+}
+
+function getCircleIndex(circles, newCircleAddress) {
+  for (var i = 0; i < circles.length; i++) {
+    if (circles[i].address.toLowerCase() === newCircleAddress.toLowerCase()) return i
+  }
+  return -1
+}
+
+function deleteOldCircle(circles, newCircleAddress) {
+  if (getCircleIndex(circles, newCircleAddress) === -1) return
+  circles.splice(getCircleIndex(circles, newCircleAddress), 1)
+  return circles
+}
+
+function getMyName() {
+  var name = getFromDb('username')
+  return name || web3.eth.accounts[0]
 }
 
 var joinCommand = {
@@ -141,7 +192,7 @@ var joinCommand = {
     type: status.types.TEXT,
     suggestions: contractAddressSuggestions
   },
-    circleNameParam
+    createCircleNameParam({placeholder: 'Give it a name'})
   ],
   validator: function(params, context) {
     if (!web3.isAddress(params.contractAddress)) {
@@ -153,10 +204,76 @@ var joinCommand = {
     // check that the contract address actually exists
     // check that the name can be added to our list as an object param
   },
-  preview: function(params, context) {},
-  handler: function(params, context) {
-    status.sendMessage('Okay, hang on while we try to join "' + params.circleName + '" for you. Shouldn\'t be too long.')
+  preview: function(params, context) {
+    return {'text-message': 'Join "' + params.name + '"'}
   },
+  handler: function(params, context) {
+    status.sendMessage('Okay, hang on while we try to join "' + params.circleName + '" for you. Shouldn\'t be too long...')
+    var circle = LendingCircle.at(params.contractAddress)
+    var tx = circle.addMember(web3.eth.accounts[0], getMyName(), {from: web3.eth.accounts[0]})
+    status.sendMessage('Crunch, whirr, creak...')
+    var receipt = waitForMining(tx)
+    var participants = getCircleParticipants(circle)
+    participants.push(getMyName())
+    saveNewCircle({address: circle.address, name: params.circleName, participants: participants})
+    status.sendMessage('Alright! We joined the circle, now you should be able to contribute! Try it out by using the "/contribute" command down below.')
+  },
+}
+
+var info = {
+  name: 'info',
+  title: 'Info',
+  params: [{
+    name: 'contractAddress',
+    type: status.types.TEXT
+  }, {
+    name: 'circleName',
+    type: status.types.TEXT
+  }],
+  handler: function(params, context) {
+    var circle = LendingCircle.at(params.contractAddress)
+    var dbSafeCircle = parseContractForDb(circle, params.circleName)
+    saveNewCircle(dbSafeCircle)
+  }
+}
+
+function parseContractForDb(circle, name) {
+  var participants = getCircleParticipants(circle)
+  var safeCircle = {address: circle.address, name: name, participants: participants}
+  return safeCircle
+}
+
+status.command(info)
+
+function getCircleParticipants(circle) {
+  status.sendMessage('Finding out who is currently in this Circle...')
+  var participantCount = circle.getMemberCount.call({from: web3.eth.accounts[0]})
+  var participants = []
+  for (var i = 0; i < participantCount; i++) {
+    var participantAddress = circle.membersAddresses.call(i, {from: web3.eth.accounts[0]})
+    if (isAlreadySavedAsParticipant(circle.address, participantAddress)) continue
+    participants.push({address: participantAddress, name: circle.getUserName.call(i, {from: web3.eth.accounts[0]})})
+    status.sendMessage(participants[i].name + ' ' + participants[i].address)
+  }
+  return participants
+}
+
+function isAlreadySavedAsParticipant(circleAddress, participantAddress) {
+  var circle = getCircleFromDb(circleAddress)
+  if (!circle) return false
+  for (var i = 0; i < circle.participants.length; i++) {
+    if (circle.participants[i].address.toLowerCase() === participantAddress.toLowerCase()) return true
+  }
+  return false
+}
+
+function getCircleFromDb(contractAddress) {
+  var circles = getAllCircles()
+  if (!circles) return false
+  for (var i = 0; i < circles.length; i++) {
+    if (circles[i].address.toLowerCase() === contractAddress) return circles[i]
+  }
+  return false
 }
 
 var statsCommand = {
@@ -164,7 +281,7 @@ var statsCommand = {
   title: 'Stats',
   description: 'Check the stats of a Lending Circle',
   color: DEFAULT_COMMAND_COLOR,
-  params: [circleNameParam],
+  params: [createCircleNameParam()],
   validator: function(params, context) {},
   preview: function(params, context) {},
   handler: function(params, context) {
@@ -185,16 +302,18 @@ var contributeCommand = {
   title: 'Contribute',
   description: 'Contribute to a Lending Circle',
   color: DEFAULT_COMMAND_COLOR,
-  params: [circleNameParam],
+  params: [createCircleNameParam()],
   validator: function(params, context) {}, // not sure how useful these validators will be when we have name inputs
   preview: function(params, context) {},
   handler: function(params, context) {
+    status.sendMessage('Righto, give me a moment...')
     var circle = getCircleFromSelection(params.circleName)
-    // contribute here is the name of the function in the smart contract
-    // the callback happens when the transaction has been sent
-    circle.contribute(function(e, txHash) {
-      status.sendMessage('Your contribution is on its way!')
-    })
+    var contributionAmount = circle.contributionSize.call({from: web3.eth.accounts[0]})
+    var tx = circle.contribute({value: contributionAmount, from: web3.eth.accounts[0]})
+    status.sendMessage('Your contribution is on its way!')
+    waitForMining(tx)
+    var myBalance = web3.fromWei(circle.getParticipantBalance(web3.eth.accounts[0], {from: web3.eth.accounts[0]}), 'ether')
+    status.sendMessage('Woohoo! Your new balance in this circle is: ' + myBalance + ' ETH.')
   }
 }
 
@@ -203,7 +322,7 @@ var advanceCommand = {
   title: 'Advance',
   color: DEFAULT_COMMAND_COLOR,
   description: 'Advance a Circle to the next round',
-  params: [circleNameParam],
+  params: [createCircleNameParam()],
   validator: function(params, context) {},
   preview: function(params, context) {},
   handler: function(params, context) {}
@@ -214,13 +333,13 @@ var withdrawCommand = {
   title: 'Withdraw',
   description: 'Withdraw from a Lending Circle',
   color: DEFAULT_COMMAND_COLOR,
-  params: [circleNameParam],
+  params: [createCircleNameParam()],
   validator: function(params, context) {
     // validate whether they actually have anything to withdraw from this contract?
   },
   preview: function(params, context) {},
   handler: function(params, context) {
-    var circle = getCircleFromSelection(params.name)
+    var circle = getCircleFromSelection(params.circleName)
     circle.withdraw(function(e, res) {
       status.sendMessage('Withdrawal logged, your funds should show up in a couple of minutes.')
     })
@@ -240,7 +359,7 @@ var userNameCommand = {
   validator: function(params, context) {
     var error
     // also check that the name has no spaces/special chars in
-    if (!/^[a-zA-Z0-9]{4,20}$/.test(params.name)) {
+    if (!/^[a-zA-Z0-9]+$/.test(params.name)) {
       error = status.components.validationMessage(
         'Uh oh',
         'I\'m only able to save English alphanumeric characters, blame my programmers...'
@@ -255,21 +374,14 @@ var userNameCommand = {
       return {markup: error}
     }
   },
+  preview: function(params, context) {},
   handler: function(params, context) {
     saveToDb('username', params.name)
-    status.sendMessage('Nice to meet you ' + params.name + '!')
 
-    // -- DEV --
-    saveToDb('circles', JSON.stringify([{
-      name: 'Tom\'s Super Circle',
-      address: '0xdeadbeef'
-    }, {
-      name: 'Hypotenuse',
-      address: '0x1234abcd'
-    }]))
-    // -- /DEV --
-  },
-  preview: function(params, context) {}
+    // not sure how to make sure that this happens after the 'preview' has been rendered
+    // it sometimes looks a bit silly when we do it like this unfortunately
+    status.sendMessage('Nice to meet you ' + params.name + '!')
+  }
 }
 
 status.addListener('init', function(params, context) {
@@ -278,7 +390,7 @@ status.addListener('init', function(params, context) {
   // if we don't have a name, return a little view that says we should add one
   // if we do have a name, don't return anything
   status.sendMessage('Welcome (back) to Save With Status, we see you haven\'t set a name yet.')
-  status.sendMessage('In order to make using Save With Status totally rad, we recommend setting a nickname, otherwise you will look like this: ' + web3.eth.accounts[0])
+  // status.sendMessage('In order to make using Save With Status totally rad, we recommend setting a nickname, otherwise you will look like this: ' + web3.eth.accounts[0])
   status.sendMessage('Hit the /name command below to get the ball rolling.')
 })
 
@@ -299,7 +411,7 @@ function addDbPrefix(item) {
 }
 
 function getCircleAddress(name) {
-  var circles = JSON.parse(getFromDb('circles'))
+  var circles = getAllCircles()
   for (var i = 0; i < circles.length; i++) {
     if (circles[i].name === name) return circles[i].address
   }
@@ -312,6 +424,10 @@ function getCircleFromSelection(name) {
 
 function getAllCircles() {
   return JSON.parse(getFromDb('circles'))
+}
+
+function saveAllCircles(circles) {
+  saveToDb('circles', JSON.stringify(circles))
 }
 
 status.response(deployCommand)
@@ -329,3 +445,11 @@ status.command(advanceCommand)
 status.command(withdrawCommand)
 status.command(contributeCommand)
 status.command(userNameCommand)
+
+// var simpleCommand = {
+//   name: 'simpleR',
+//   title: 'simpleRoot',
+//   description: 'A simple command'
+// }
+// status.command(simpleCommand)
+// status.response(simpleCommand)
