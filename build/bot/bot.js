@@ -6,7 +6,29 @@ var LendingCircle = web3.eth.contract(CIRCLE_ABI)
 var COLORS = {
   DEFAULT_COMMAND: '#333FFF',
   BALANCE_POSITIVE: 'green',
-  BALANCE_NEGATIVE: 'red'
+  BALANCE_NEGATIVE: 'red',
+  BALANCE_NEUTRAL: 'black',
+  BORDER: '#0000001f'
+}
+
+var STYLES = {
+  SUGGESTIONS_HEADING: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER,
+    paddingTop: 10,
+    paddingBottom: 10,
+    // these two lines keep the border off the edge, looks a tiny bit nicer
+    marginLeft: 10,
+    marginRight: 10,
+    // separates the heading from the rest of the text
+    marginBottom: 10
+  },
+  COMMAND_PREVIEW: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.BORDER,
+    paddingTop: 5,
+    marginTop: 5
+  }
 }
 
 function createCircleNameParam(optional) {
@@ -20,13 +42,18 @@ function createCircleNameParam(optional) {
   return circleNameParam
 }
 
+function commandTextComponent(command) {
+  return status.components.text({style: {fontWeight: 'bold'}}, command)
+}
+
 function selectCircleSuggestions(params, context) {
   var circles = getAllCircles()
-  var touchables = circles.map(function(circle) {
+  var components
+  components = circles.map(function(circle) {
     return status.components.touchable(
       {onPress: status.components.dispatch([status.events.SET_COMMAND_ARGUMENT, [0, circle.name]])},
       status.components.view(
-        {style: {borderBottomWidth: 1, borderBottomColor: '#0000001f'}},
+        {style: {borderBottomWidth: 1, borderBottomColor: COLORS.BORDER}},
         [status.components.text(
           {style: {padding: 20}},
           circle.name
@@ -34,10 +61,29 @@ function selectCircleSuggestions(params, context) {
       )
     )
   })
+  if (circles.length === 0) {
+    var textLineStyle = {flexDirection: 'row', paddingLeft: 10, paddingRight: 10, paddingTop: 5, paddingBottom: 5, flexWrap: 'wrap'}
+    // pretty revolting but what are ya gonna do about it? it's a hackathon not a mr fancy-pantsathon
+    components = [status.components.text({style: STYLES.SUGGESTIONS_HEADING}, 'It doesn\'t look like you have joined any Circles yet.'),
+      status.components.view({style: textLineStyle}, [
+        status.components.text({}, 'To create a circle, hit '),
+        commandTextComponent('/create'),
+        status.components.text({}, ' down below.')
+      ]),
+      status.components.view({style: textLineStyle}, [
+        status.components.text({}, 'To join an existing one, hit '),
+        commandTextComponent('/join')
+      ]),
+      status.components.view({style: textLineStyle}, [
+        status.components.text({}, 'If you\'re already a member of a circle, hit '),
+        commandTextComponent('/load'),
+        status.components.text({}, ' to bring it into Status.im.')
+      ])]
+  }
   return {markup: status.components.scrollView({
     // this prop is necessary to make sure that the first tap doesn't just close the keyboard!
     keyboardShouldPersistTaps: 'always',
-  }, touchables)}
+  }, components)}
 }
 
 // // TODO(tom) figure out why this does not work properly
@@ -98,25 +144,50 @@ function suggestionsFunction(number) {
   return {markup: status.components.view({}, [status.components.text({}, 'Suggestion ' + number)])}
 }
 
-var testCommand = {
-  name: 'test',
-  title: 'Test',
+// var testCommand = {
+//   name: 'test',
+//   title: 'Test',
+//   sequentialParams: true,
+//   params: [{
+//     name: 'one',
+//     type: status.types.TEXT,
+//     suggestions: suggestionsFunction(1)
+//   }, {
+//     name: 'two',
+//     type: status.types.NUMBER,
+//     suggestions: suggestionsFunction(2)
+//   }]
+// }
+
+// status.command(testCommand)
+// status.response(testCommand)
+
+status.addListener('confirm-delete', function(params, context) {
+  var message = JSON.stringify(params)
+  status.sendMessage(message)
+})
+
+var removeCommand = {
+  name: 'remove',
+  title: 'Remove',
+  description: 'Remove a Lending Circle from your device',
+  color: COLORS.DEFAULT_COMMAND,
   sequentialParams: true,
-  params: [{
-    name: 'one',
-    type: status.types.TEXT,
-    suggestions: suggestionsFunction(1)
-  }, {
-    name: 'two',
-    type: status.types.NUMBER,
-    suggestions: suggestionsFunction(2)
-  }]
+  params: [createCircleNameParam()],
+  preview: function(params, context) {},
+  handler: function(params, context) {
+    var address = getCircleAddress(params.circleName)
+    var circles = getAllCircles()
+    circles = deleteCircle(circles, address)
+    saveAllCircles(circles)
+    status.sendMessage('Ok, we have removed "*' + params.circleName + '*".\nHit */load* if you want to add it back again.')
+  }
 }
 
-status.command(testCommand)
-status.response(testCommand)
+status.command(removeCommand)
+status.response(removeCommand)
 
-var deployCommand = {
+var createCommand = {
   name: 'create',
   title: 'Create',
   description: 'Create a new Lending Circle',
@@ -177,7 +248,7 @@ function saveNewCircle(newCircle) {
   if (!Array.isArray(circles)) {
     circles = []
   } else if (circleAlreadySaved(circles, newCircle.address)) {
-    circles = deleteOldCircle(circles, newCircle.address)
+    circles = deleteCircle(circles, newCircle.address)
   }
   circles.push(newCircle)
   saveAllCircles(circles)
@@ -189,14 +260,15 @@ function circleAlreadySaved(circles, newCircleAddress) {
 
 function getCircleIndex(circles, newCircleAddress) {
   for (var i = 0; i < circles.length; i++) {
+    if (!circles[i].address) return -1
     if (circles[i].address.toLowerCase() === newCircleAddress.toLowerCase()) return i
   }
   return -1
 }
 
-function deleteOldCircle(circles, newCircleAddress) {
-  if (getCircleIndex(circles, newCircleAddress) === -1) return
-  circles.splice(getCircleIndex(circles, newCircleAddress), 1)
+function deleteCircle(circles, circleAddress) {
+  if (getCircleIndex(circles, circleAddress) === -1) return
+  circles.splice(getCircleIndex(circles, circleAddress), 1)
   return circles
 }
 
@@ -217,7 +289,7 @@ var joinCommand = {
     type: status.types.TEXT,
     suggestions: contractAddressSuggestions
   },
-    createCircleNameParam({placeholder: 'Give it a name'})
+    createCircleNameParam({placeholder: 'Give the Circle a nickname'})
   ],
   validator: function(params, context) {
     if (!web3.isAddress(params.contractAddress)) {
@@ -239,24 +311,32 @@ var joinCommand = {
     var participants = getCircleParticipants(circle)
     participants.push(getMyName())
     saveNewCircle({address: circle.address, name: params.circleName, participants: participants})
-    status.sendMessage('Alright! We joined the circle, now you should be able to contribute! Try it out by using the "/contribute" command down below.')
+    status.sendMessage('Alright! We joined the circle, now you should be able to contribute!\n\nTry it out using the */contribute* command down below.')
   }
 }
 
-var info = {
-  name: 'info',
-  title: 'Info',
+var loadCommand = {
+  name: 'load',
+  title: 'Load',
+  description: 'Load an existing Circle',
+  color: COLORS.DEFAULT_COMMAND,
+  sequentialParams: true,
   params: [{
     name: 'contractAddress',
-    type: status.types.TEXT
-  }, {
-    name: 'circleName',
-    type: status.types.TEXT
-  }],
+    type: status.types.TEXT,
+    placeholder: 'Contract address of the Circle'
+  },
+    createCircleNameParam({placeholder: 'Give the Circle a nickname'})
+  ],
+  preview: function(params, context) {
+    return {markup: status.components.text({style: STYLES.COMMAND_PREVIEW}, 'Load "' + params.circleName + '"')}
+  },
   handler: function(params, context) {
     var circle = LendingCircle.at(params.contractAddress)
     var dbSafeCircle = parseContractForDb(circle, params.circleName)
     saveNewCircle(dbSafeCircle)
+    status.sendMessage('Okey dokey, I\'ll load that contract and save it as ' +
+      '"' + params.circleName + '".\n\nHit */stats* if you need a reminder about the status of this Circle.')
   }
 }
 
@@ -265,8 +345,6 @@ function parseContractForDb(circle, name) {
   var safeCircle = {address: circle.address, name: name, participants: participants}
   return safeCircle
 }
-
-status.command(info)
 
 function getCircleParticipants(circle) {
   var participantCount = circle.getMemberCount.call({from: web3.eth.accounts[0]})
@@ -292,7 +370,7 @@ function getCircleFromDb(contractAddress) {
   var circles = getAllCircles()
   if (!circles) return false
   for (var i = 0; i < circles.length; i++) {
-    if (circles[i].address.toLowerCase() === contractAddress) return circles[i]
+    if (circles[i].address.toLowerCase() === contractAddress.toLowerCase()) return circles[i]
   }
   return false
 }
@@ -302,39 +380,53 @@ var statsCommand = {
   title: 'Stats',
   description: 'Check the stats of a Lending Circle',
   color: COLORS.DEFAULT_COMMAND,
+  sequentialParams: true,
   params: [createCircleNameParam()],
+  fullscreen: true,
   validator: function(params, context) {},
   preview: function(params, context) {
     status.sendMessage('Ok, I\'ll fetch the stats for "' + params.circleName + '", one tick...')
     var circle = getCircleFromSelection(params.circleName)
+    status.sendMessage('The contract address for this Circle is printed in the next message, so you can share it easily:')
+    status.sendMessage(circle.address)
     var participants = getCircleParticipants(circle)
-    var components = []
+    var components = [
+      status.components.view({paddingBottom: 5}, [
+        status.components.text({}, 'A green balance indicates that the person has contributed enough so far,' +
+          ' whereas a red balance indicates that the person still needs to contribute to the circle to be up-to-date.')
+      ])
+    ]
     var longestName = 0
     for (var i = 0; i < participants.length; i++) {
       var participant = participants[i]
       var balance = circle.getParticipantBalance(participant.address)
+      var currentRound = circle.currentRound.call()
       if (participant.name.length > longestName) longestName = participant.name.length
       var color = balance >= 0 ? COLORS.BALANCE_POSITIVE : COLORS.BALANCE_NEGATIVE
-      var totalContributed = getTotalContributed(circle, participant.address) + ' ETH'
+      color = balance === 0 ? COLORS.BALANCE_NEUTRAL : color
+      var totalContributed = getTotalContributed(circle, participant.address) + getPlusOrMinus(balance) + ' ETH'
       components.push(
         status.components.view({style: {
           flexDirection: 'row',
           justifyContent: 'space-between'
         }}, [
-          status.components.text({}, participant.name),
+          status.components.text({style: {paddingRight: 20}}, participant.name),
           status.components.text({style: {fontWeight: 'bold', color: color}}, totalContributed)
         ])
       )
     }
     return {markup:
-      status.components.view({style: {
-        width: longestName * 20,
-        paddingTop: 5
-      }}, components)
+      status.components.view({style: STYLES.COMMAND_PREVIEW}, components)
     }
   },
   handler: function(params, context) {
   }
+}
+
+function getPlusOrMinus(balance) {
+  var ethBalance = web3.fromWei(balance, 'ether')
+  if (ethBalance == 0) return ''
+  return ' (' + ethBalance + ')'
 }
 
 function getTotalContributed(circle, participantAddress) {
@@ -351,7 +443,8 @@ var contributeCommand = {
   description: 'Contribute to a Lending Circle',
   color: COLORS.DEFAULT_COMMAND,
   params: [createCircleNameParam()],
-  validator: function(params, context) {}, // not sure how useful these validators will be when we have name inputs
+  fullscreen: true,
+  validator: circleNameValidator,
   preview: function(params, context) {},
   handler: function(params, context) {
     status.sendMessage('Righto, give me a moment...')
@@ -365,23 +458,25 @@ var contributeCommand = {
   }
 }
 
-var advanceCommand = {
-  name: 'advance',
-  title: 'Advance',
+var startCommand = {
+  name: 'start',
+  title: 'Start',
   color: COLORS.DEFAULT_COMMAND,
-  description: 'Advance a Circle to the next round',
+  description: 'Start a Lending Circle, nobody else can join after this',
+  sequentialParams: true,
   params: [createCircleNameParam()],
-  validator: function(params, context) {},
+  fullscreen: true,
+  validator: circleNameValidator,
   preview: function(params, context) {},
   handler: function(params, context) {
-    status.sendMessage('Ok, I\'ll get right to it!')
+    status.sendMessage('Ok, I\'ll get right to it...')
     var circle = getCircleFromSelection(params.circleName)
     var currentRound = circle.currentRound.call({from: web3.eth.accounts[0]})
     var nextRound = parseInt(currentRound) + 1
-    status.sendMessage('Starting the next round (round ' + nextRound + '), hang on')
+    status.sendMessage('Starting the next round (round ' + nextRound + '), hang on...')
     var tx = circle.startRound({from: web3.eth.accounts[0]})
     waitForMining(tx)
-    status.sendMessage('Excellent, we\'re now in round ' + nextRound + '! Hit "/stats" to see how things stand right now.')
+    status.sendMessage('Excellent, we\'re now in round ' + nextRound + '!\n\nHit */stats* to see how things stand right now.')
   }
 }
 
@@ -391,9 +486,8 @@ var withdrawCommand = {
   description: 'Withdraw from a Lending Circle',
   color: COLORS.DEFAULT_COMMAND,
   params: [createCircleNameParam()],
-  validator: function(params, context) {
-    // validate whether they actually have anything to withdraw from this contract?
-  },
+  fullscreen: true,
+  validator: circleNameValidator,
   preview: function(params, context) {},
   handler: function(params, context) {
     status.sendMessage('Hang on, I\'ll just check whether you have anything to withdraw...')
@@ -446,26 +540,29 @@ var userNameCommand = {
   preview: function(params, context) {},
   handler: function(params, context) {
     saveToDb('username', params.name)
-
-    // not sure how to make sure that this happens after the 'preview' has been rendered
-    // it sometimes looks a bit silly when we do it like this unfortunately
     status.sendMessage('Nice to meet you ' + params.name + '!')
   }
 }
 
 status.addListener('init', function(params, context) {
   if (getFromDb('username') !== null) return
-  // ask the proxy whether we have a name yet
-  // if we don't have a name, return a little view that says we should add one
-  // if we do have a name, don't return anything
   status.sendMessage('Welcome (back) to Save With Status, we see you haven\'t set a name yet.')
-  // status.sendMessage('In order to make using Save With Status totally rad, we recommend setting a nickname, otherwise you will look like this: ' + web3.eth.accounts[0])
-  status.sendMessage('Hit the /name command below to get the ball rolling.')
+  status.sendMessage('In order to make using Save With Status totally rad, we recommend setting a nickname, otherwise you will look like this: ' + web3.eth.accounts[0])
+  status.sendMessage('Hit the */name* command below to get the ball rolling.')
 })
 
 status.addListener('on-message-send', function() {
   return {'text-message': 'Unfortunately I wasn\'t programmed to have normal conversations. You\'ll have to issue one of the commands below to get me to do anything.'}
 })
+
+function circleNameValidator(params, context) {
+  if (!getCircleFromSelection(params.circleName)) {
+    return {markup: status.components.validationMessage(
+      'Whoops',
+      'It doesn\'t look like you have joined that Circle'
+    )}
+  }
+}
 
 function saveToDb(item, value) {
   localStorage.setItem(addDbPrefix(item), value)
@@ -488,6 +585,7 @@ function getCircleAddress(name) {
 }
 
 function getCircleFromSelection(name) {
+  if (!getCircleAddress(name)) return null
   return LendingCircle.at(getCircleAddress(name))
 }
 
@@ -499,25 +597,28 @@ function saveAllCircles(circles) {
   saveToDb('circles', JSON.stringify(circles))
 }
 
-status.response(deployCommand)
+status.response(createCommand)
 status.response(joinCommand)
 status.response(statsCommand)
-status.response(advanceCommand)
+status.response(startCommand)
 status.response(withdrawCommand)
 status.response(contributeCommand)
 status.response(userNameCommand)
+status.response(loadCommand)
 
-status.command(deployCommand)
+status.command(createCommand)
 status.command(joinCommand)
 status.command(statsCommand)
-status.command(advanceCommand)
+status.command(startCommand)
 status.command(withdrawCommand)
 status.command(contributeCommand)
 status.command(userNameCommand)
+status.command(loadCommand)
 
 // var simpleCommand = {
 //   name: 'simpleR',
 //   title: 'simpleRoot',
+//   executeImmediately: true,
 //   description: 'A simple command'
 // }
 // status.command(simpleCommand)

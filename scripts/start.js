@@ -315,8 +315,7 @@ function runDevServer(host, port, protocol) {
 function addToStatus(dappUrl) {
   var deviceIP = process.env.IP || 'localhost'
   child.exec(
-    //, "dapp-url": "' + dappUrl + '"
-    'status-dev-cli add \'{"whisper-identity": "' + BOT_WHISPER_IDENTITY + '", "name": "' + BOT_NAME + '", "bot-url": "' + (dappUrl + BOT_SITE_PATH) + '"}\' --ip ' + deviceIP,
+    'status-dev-cli add \'{"whisper-identity": "' + BOT_WHISPER_IDENTITY + '", "name": "' + BOT_NAME + '", "bot-url": "' + (dappUrl + BOT_SITE_PATH) + '", "dapp-url": "' + dappUrl + '"}\' --ip ' + deviceIP,
     {stdio: 'inherit'},
     function(error, stdout, stderr) {
       devCliMessages.stdout = stdout

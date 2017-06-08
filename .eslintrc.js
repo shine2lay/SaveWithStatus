@@ -26,6 +26,7 @@ module.exports = {
     'comma-dangle': 0,
     'no-unused-vars': 0,
     'keyword-spacing': 2,
+    'eqeqeq': 0,
     // allow async-await
     'generator-star-spacing': 0,
     // allow debugger during development
