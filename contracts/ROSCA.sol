@@ -17,7 +17,7 @@ contract ROSCA {
     uint256 public roundPeriodInSecs;
     uint16 public currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
     uint128 public contributionSize;
-    uint256 internal startTime;
+    uint256 internal roundStartTime;
 
     bool public endOfROSCA = false;
 
@@ -74,13 +74,13 @@ contract ROSCA {
 
         contributionSize = contributionSize_;
 
-        startTime = now;
+        roundStartTime = now;
 
         addMember(msg.sender, userName);
     }
 
     function addMember(address newMember, string userName) public {
-        if (members[newMember].alive) {  // already registered
+        if (members[newMember].alive || currentRound > 0) {  // already registered or registration closed
             throw;
         }
         members[newMember] = User({paid: false , credit: 0, alive: true, debt: false});
@@ -88,15 +88,28 @@ contract ROSCA {
         memberNames[newMember] = userName;
     }
 
+    function checkRoundCanAdvance () returns (bool) {
+        uint256 roundEndTime = roundStartTime + roundPeriodInSecs;
+        if (now < roundEndTime ) {  // too early to start a new round.
+            return false;
+        }
+        // allow the round To Advance if all members have contributed
+        for (uint16 i = 0; i < membersAddresses; i++) {
+            if (members[membersAddresses[i]].credit < (currentRound * contributionSize)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
       * @dev Calculates the winner of the current round's pot, and credits her.
       * If there were no bids during the round, winner is selected semi-randomly.
       * Priority is given to non-delinquent participants.
       */
-    function startRound() onlyIfRoscaNotEnded external {
-        uint256 roundStartTime = startTime + (uint(currentRound)  * roundPeriodInSecs);
-        if (now < roundStartTime ) {  // too early to start a new round.
-            throw;
+    function startRound() onlyIfRoscaNotEnded external returns (bool success) {
+        if (!checkRoundCanAdvance()) {
+            return false;
         }
 
         if (currentRound != 0) {
@@ -107,6 +120,7 @@ contract ROSCA {
         } else {
             endOfROSCA = true;
         }
+        roundStartTime = now;
     }
 
     function cleanUpPreviousRound() internal {
@@ -177,6 +191,9 @@ contract ROSCA {
      * Any excess funds are withdrawable through withdraw() without fee.
      */
     function contribute() payable onlyFromMember onlyIfRoscaNotEnded external {
+        if (currentRound > 0) {
+            startRound(); // try to advance the round
+        }
         User member = members[msg.sender];
         uint256 value = msg.value;
         member.credit += value;
@@ -195,7 +212,10 @@ contract ROSCA {
     /**
      * Withdraws available funds for msg.sender.
      */
-    function withdraw() onlyFromMember external returns(bool success) {
+    function withdraw() onlyFromMember external returns (bool success) {
+        if (currentRound > 0) {
+            startRound(); // try to advance the round
+        }
         if (members[msg.sender].debt && !endOfROSCA) {  // delinquent winners need to first pay their debt
             throw;
         }
