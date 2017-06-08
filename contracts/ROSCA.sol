@@ -112,7 +112,7 @@ contract ROSCA {
             return false;
         }
 
-        if (currentRound != 1) {
+        if (currentRound != 0) {
             cleanUpPreviousRound();
         }
         if (currentRound < membersAddresses.length) {
