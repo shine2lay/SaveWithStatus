@@ -15,7 +15,7 @@ contract ROSCA {
 
     // ROSCA parameters
     uint256 public roundPeriodInSecs;
-    uint16 public currentRound = 1;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
+    uint16 public currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
     uint128 public contributionSize;
     uint256 internal roundStartTime;
 
@@ -80,7 +80,7 @@ contract ROSCA {
     }
 
     function addMember(address newMember, string userName) public {
-        if (members[newMember].alive || currentRound > 1) {  // already registered or registration closed
+        if (members[newMember].alive || currentRound > 0) {  // already registered or registration closed
             throw;
         }
         members[newMember] = User({paid: false , credit: 0, alive: true, debt: false});
@@ -191,7 +191,9 @@ contract ROSCA {
      * Any excess funds are withdrawable through withdraw() without fee.
      */
     function contribute() payable onlyFromMember onlyIfRoscaNotEnded external {
-        startRound(); // try to advance the round
+        if (currentRound > 0) {
+            startRound(); // try to advance the round
+        }
         User member = members[msg.sender];
         uint256 value = msg.value;
         member.credit += value;
@@ -210,8 +212,10 @@ contract ROSCA {
     /**
      * Withdraws available funds for msg.sender.
      */
-    function withdraw() onlyFromMember external returns(bool success) {
-        startRound(); // try to advance the round
+    function withdraw() onlyFromMember external returns (bool success) {
+        if (currentRound > 0) {
+            startRound(); // try to advance the round
+        }
         if (members[msg.sender].debt && !endOfROSCA) {  // delinquent winners need to first pay their debt
             throw;
         }
