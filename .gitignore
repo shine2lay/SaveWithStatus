@@ -14,3 +14,4 @@ build_webpack
 .env
 npm-debug.log
 .truffle-solidity-loader
+.idea
