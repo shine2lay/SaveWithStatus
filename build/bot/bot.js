@@ -14,6 +14,8 @@
  *      kinda dies and I have to delete and re-add the bot to get it to work again
  *    - Suggestions markup only shows for the first param if you have `sequentialParams: true`.
  *      Logged it here: https://github.com/status-im/status-react/issues/1279
+ *    - If I `x` out of a transaction on the confirmation screen, I get a nasty error popup, and I'm
+ *      not sure on the method of handling that
  *
  *  Some things I would like to see:
  *    - The ability to return custom React Native components in a .sendMessage() function
@@ -54,7 +56,8 @@ var STYLES = {
     borderTopWidth: 1,
     borderTopColor: COLORS.BORDER,
     paddingTop: 5,
-    marginTop: 5
+    marginTop: 5,
+    flexWrap: 'wrap'
   },
   CIRCLE_LIST_ITEM: {
     flexDirection: 'row',
@@ -90,19 +93,28 @@ function selectCircleSuggestions(params, context) {
   var circles = getAllCircles()
   var components
   components = circles.map(function(circle) {
-    var style = STYLES.CIRCLE_LIST_ITEM
-    var contract = LendingCircle.at(circle.address)
-    var balance = contract.getParticipantBalance.call(web3.eth.accounts[0], {from: web3.eth.accounts[0]})
-    var sign = getPlusOrMinus(balance)
-    var balanceColor = balance >= 0 ? COLORS.BALANCE_POSITIVE : COLORS.BALANCE_NEGATIVE
-    balanceColor = web3.fromWei(balance, 'ether') == 0 ? COLORS.BALANCE_NEUTRAL : balanceColor
+    /**
+     *  Please check out what I tried to do here :D
+     *  Turns out the RPC calls are a little too slow (presumably because we have to call a non-
+     *  light client node) for something like this, the suggestion box just takes a super long time
+     *  to appear, which isn't the best experience.
+     *  We could load & cache these values on the app's `init`, and then again every time the user
+     *  interacts with that particular Lending Circle, but I am not sure how much fun that would be
+     *  to write, and the payoff might not be good enough at this stage.
+     */
+    // var contract = LendingCircle.at(circle.address)
+    // var balance = contract.getParticipantBalance.call(web3.eth.accounts[0], {from: web3.eth.accounts[0]})
+    // var sign = getPlusOrMinus(balance)
+    // var balanceColor = balance >= 0 ? COLORS.BALANCE_POSITIVE : COLORS.BALANCE_NEGATIVE
+    // balanceColor = web3.fromWei(balance, 'ether') == 0 ? COLORS.BALANCE_NEUTRAL : balanceColor
+    // var sign = '+'
     return status.components.touchable(
       {onPress: status.components.dispatch([status.events.SET_COMMAND_ARGUMENT, [0, circle.name]])},
       status.components.view(
         {style: STYLES.CIRCLE_LIST_ITEM},
         [
-          status.components.text({style: {color: COLORS.TOUCHABLE_TEXT, fontWeight: 'bold'}}, circle.name),
-          status.components.text({style: {color: balanceColor, fontWeight: 'bold'}}, sign + web3.fromWei(balance, 'ether') + ' ETH'),
+          status.components.text({style: {color: COLORS.TOUCHABLE_TEXT, fontWeight: 'bold'}}, circle.name)
+          // status.components.text({style: {color: balanceColor, fontWeight: 'bold'}}, sign + web3.fromWei(balance, 'ether') + ' ETH'),
         ]
       )
     )
@@ -175,12 +187,9 @@ var removeCommand = {
     var circles = getAllCircles()
     circles = deleteCircle(circles, address)
     saveAllCircles(circles)
-    status.sendMessage('Ok, we have removed "*' + params.circleName + '*".\nHit */load* if you want to add it back again.')
+    status.sendMessage('Ok, we have removed *' + params.circleName + '*.\n\nHit */load* if you want to add it back again.')
   }
 }
-
-status.command(removeCommand)
-status.response(removeCommand)
 
 var createCommand = {
   name: 'create',
@@ -202,6 +211,13 @@ var createCommand = {
   }],
   validator: function(params) {
     var error
+    if (params.name.length > 20) {
+      error = status.components.validationMessage(
+        'My memory isn\'t that good',
+        'I\'ll never remember all that. Could you try something a little shorter?'
+      )
+      return {markup: error}
+    }
     if (params.paymentAmount < 0.001) {
       error = status.components.validationMessage(
         'Not enough ETH',
@@ -212,13 +228,18 @@ var createCommand = {
   },
   preview: function(params, context) {
     return {markup: status.components.view({style: STYLES.COMMAND_PREVIEW}, [
-      status.components.view({style: {flexDirection: 'row', justifyContent: 'space-between'}}, [
+      status.components.view({style: {flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap'}}, [
         status.components.text({style: {paddingRight: 10}}, 'Name'),
-        status.components.text({style: {fontWeight: 'bold'}}, params.name),
+        status.components.text({style: {fontWeight: 'bold'}}, params.name)
       ]),
-      status.components.view({style: {flexDirection: 'row', justifyContent: 'space-between'}}, [
+      status.components.view({style: {flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap'}}, [
         status.components.text({style: {paddingRight: 10}}, 'Contribution'),
-        status.components.text({style: {fontWeight: 'bold'}}, params.paymentAmount + ' ETH'),
+        status.components.text({style: {fontWeight: 'bold'}}, params.paymentAmount + ' ETH')
+      ]),
+      status.components.view({style: {paddingTop: 5, marginTop: 5, borderTopColor: COLORS.BORDER, borderTopWidth: 1}}, [
+        status.components.text({}, 'Now that you\'ve created a circle, you\'ll probably want some of your friends to join it.'),
+        status.components.text({}, 'Share the above address (the one which starts with "0x" with your friends, and they will be able to join using the /join command.'),
+        status.components.text({}, 'Once you start the Lending Circle\'s first round with the /start command, nobody else will be able to join'),
       ])
     ])}
   },
@@ -228,7 +249,7 @@ var createCommand = {
       from: web3.eth.accounts[0],
       data: CIRCLE_BYTECODE
     })
-    status.sendMessage('Thanks, it will take a few seconds to deploy *"' + params.name + '"*.\n\nIf only I actually had hands to put a kettle on, now might be a good time...')
+    status.sendMessage('Thanks, it will take a few seconds to deploy *' + params.name + '*.\n\nIf only I actually had hands to put a kettle on, now might be a good time...')
     var receipt = waitForMining(circle.transactionHash)
     if (receipt.failed) return status.sendMessage('Oh dear, we didn\'t manage to complete that, give it another go.')
     status.sendMessage('Done! Send your friends the below address and they can join your circle.')
@@ -307,15 +328,24 @@ var joinCommand = {
     }
   },
   preview: function(params, context) {
-    return {'text-message': 'Join "' + params.name + '"'}
+    return {markup: status.components.view({style: STYLES.COMMAND_PREVIEW}, [
+      status.components.view({style: {flexDirection: 'row', justifyContent: 'space-between'}}, [
+        status.components.text({style: {paddingRight: 10}}, 'Name'),
+        status.components.text({style: {fontWeight: 'bold'}}, params.circleName),
+      ])
+    ])}
   },
   handler: function(params, context) {
-    status.sendMessage('Okay, hang on while we try to join "' + params.circleName + '" for you. Shouldn\'t be too long...')
+    status.sendMessage('Okay, hang on while we try to join *' + params.circleName + '* for you. Shouldn\'t be too long...')
     var circle = LendingCircle.at(params.contractAddress)
     var tx = circle.addMember(web3.eth.accounts[0], getMyName(), {from: web3.eth.accounts[0]})
     status.sendMessage('Crunch, whirr, creak...')
     var receipt = waitForMining(tx)
-    if (receipt.failed) return status.sendMessage('Oh no! For some reason that failed, maybe this Circle has started without you :(')
+    if (receipt.failed) {
+      status.sendMessage('Oh no! For some reason that failed, maybe you\'ve already joined this Circle, try using */load*')
+      status.sendMessage('If that doesn\'t work, this Circle might have started without you :(')
+      return
+    }
     var participants = getCircleParticipants(circle)
     participants.push(getMyName())
     saveNewCircle({address: circle.address, name: params.circleName, participants: participants})
@@ -341,11 +371,12 @@ var loadCommand = {
     return {markup: status.components.text({style: STYLES.COMMAND_PREVIEW}, 'Load "' + params.circleName + '"')}
   },
   handler: function(params, context) {
+    status.sendMessage('Ok, fetching that one, give me a moment...')
     var circle = LendingCircle.at(params.contractAddress)
     var dbSafeCircle = parseContractForDb(circle, params.circleName)
     saveNewCircle(dbSafeCircle)
-    status.sendMessage('Okey dokey, I\'ll load that contract and save it as ' +
-      '"' + params.circleName + '".\n\nHit */stats* if you need a reminder about the status of this Circle.')
+    status.sendMessage('Sweet, I\'ve loaded that Circle and saved it as ' +
+      '*' + params.circleName + '*.\n\nHit */stats* if you need a reminder about the status of this Circle.')
   }
 }
 
@@ -384,7 +415,7 @@ var statsCommand = {
   fullscreen: true,
   validator: function(params, context) {},
   preview: function(params, context) {
-    status.sendMessage('Ok, I\'ll fetch the stats for "*' + params.circleName + '*", one tick...')
+    status.sendMessage('Ok, I\'ll fetch the stats for *' + params.circleName + '*, one tick...')
     var circle = getCircleFromSelection(params.circleName)
     status.sendMessage('The contract address for this Circle is printed in the next message, so you can share it easily:')
     status.sendMessage(circle.address)
@@ -392,9 +423,9 @@ var statsCommand = {
     var currentRound = circle.currentRound.call()
     var components = [
       status.components.view({}, [
+        status.components.text({style: {borderBottomWidth: 1, borderBottomColor: COLORS.BORDER, fontWeight: 'bold', paddingBottom: 5, marginBottom: 5}}, params.circleName),
         status.components.text({}, 'A green balance means the person is up to date,' +
           ' whereas an orange balance indicates that the person still needs to contribute to the Lending Circle.'),
-        status.components.text({}, 'Your name is highlighted.'),
         status.components.text({style: {
           fontWeight: 'bold', paddingTop: 10, paddingBottom: 5, marginBottom: 5, borderBottomWidth: 1, borderBottomColor: COLORS.BORDER
         }}, 'Balances'),
@@ -416,12 +447,16 @@ var statsCommand = {
           flexDirection: 'row',
           justifyContent: 'space-between'
         }}, [
-          status.components.text({style: {paddingRight: 20, fontWeight: me ? 'bold' : 'regular'}}, participant.name),
+          status.components.text({style: {paddingRight: 20, fontWeight: me ? 'bold' : 'regular'}}, me ? 'You' : participant.name),
           status.components.text({style: {fontWeight: 'bold', color: color}}, totalContributed)
         ])
       )
     }
-    components.push(status.components.text({style: {paddingTop: 5}}, 'Currently in round ' + currentRound))
+    var roundText = currentRound == 0 ? 'This Circle hasn\'t started yet' : 'Currently in round ' + currentRound
+    components.push(status.components.view({style: {marginTop: 5, borderTopWidth: 1, borderTopColor: COLORS.BORDER}}, [
+      status.components.text({style: {paddingTop: 5}}, roundText),
+      status.components.text({style: {paddingTop: 5}}, 'Contributions of ' + web3.fromWei(circle.contributionSize.call({from: web3.eth.accounts[0]})) + ' ETH')
+    ]))
     return {markup:
       status.components.view({style: STYLES.COMMAND_PREVIEW}, components)
     }
@@ -451,20 +486,39 @@ var contributeCommand = {
   title: 'Contribute',
   description: 'Contribute to a Lending Circle',
   color: COLORS.DEFAULT_COMMAND,
+  sequentialParams: true,
   params: [createCircleNameParam()],
   fullscreen: true,
   validator: circleNameValidator,
-  preview: function(params, context) {},
+  preview: function(params, context) {
+    var circle = getCircleFromSelection(params.circleName)
+    var contributionAmount = circle.contributionSize.call({from: web3.eth.accounts[0]})
+    return {markup: status.components.view({style: STYLES.COMMAND_PREVIEW}, [
+      status.components.view({style: {flexDirection: 'row', justifyContent: 'space-between'}}, [
+        status.components.text({style: {paddingRight: 20}}, params.circleName),
+        status.components.text({style: {fontWeight: 'bold', color: COLORS.BALANCE_POSITIVE}}, web3.fromWei(contributionAmount, 'ether') + ' ETH')
+      ])
+    ])}
+  },
   handler: function(params, context) {
     status.sendMessage('Righto, give me a moment...')
     var circle = getCircleFromSelection(params.circleName)
     var contributionAmount = circle.contributionSize.call({from: web3.eth.accounts[0]})
     var tx = circle.contribute({value: contributionAmount, from: web3.eth.accounts[0]})
-    status.sendMessage('Your contribution of ' + web3.fromWei(contributionAmount, 'ether') + ' ETH is on the way!')
+    status.sendMessage('Your contribution of *' + web3.fromWei(contributionAmount, 'ether') + ' ETH* is on the way!')
     var receipt = waitForMining(tx)
     if (receipt.failed) return status.sendMessage('Ummm... that didn\'t work and we\'re at a loss as to why. Maybe ask an 8 ball?')
-    var myBalance = web3.fromWei(circle.getParticipantBalance(web3.eth.accounts[0], {from: web3.eth.accounts[0]}), 'ether')
-    status.sendMessage('Woohoo! Your new balance in this circle is: +' + myBalance + ' ETH.')
+    var balance = circle.getParticipantBalance(web3.eth.accounts[0], {from: web3.eth.accounts[0]})
+    var ethBalance = web3.fromWei(balance, 'ether')
+    if (ethBalance == 0) {
+      status.sendMessage('Woohoo! You\'ve contributed enough to *' + params.circleName + '* for the time being.')
+    }
+    if (ethBalance > 0) {
+      status.sendMessage('Nice! Currently you\'re about *' + ethBalance + ' ETH* up! You can withdraw this positive balance at any time by hitting */withdraw* down below.')
+    }
+    if (ethBalance < 0) {
+      status.sendMessage('Getting there! You still have *' + ethBalance + ' ETH* left to contribute to *' + params.circleName + '* before you\'re up to date.')
+    }
   }
 }
 
@@ -488,11 +542,11 @@ var startCommand = {
     var circle = getCircleFromSelection(params.circleName)
     var currentRound = circle.currentRound.call({from: web3.eth.accounts[0]})
     var nextRound = parseInt(currentRound) + 1
-    status.sendMessage('Starting the next round (round ' + nextRound + '), hang on...')
+    status.sendMessage('Starting *round ' + nextRound + '*, hang on...')
     var tx = circle.startRound({from: web3.eth.accounts[0]})
     status.sendMessage('This bit might take a little while...')
     var receipt = waitForMining(tx)
-    if (receipt.failed) return status.sendMessage('Oh no! For some reason that didn\'t work, and we\'re not really sure why, sorry :/')
+    if (receipt.failed) return status.sendMessage('Oh no! For some reason that didn\'t work, and we\'re not really sure why... :/')
     currentRound = circle.currentRound.call({from: web3.eth.accounts[0]})
     status.sendMessage('Excellent, we\'re now in round ' + currentRound + '!\n\nHit */stats* to see how things stand right now.')
   }
@@ -503,10 +557,22 @@ var withdrawCommand = {
   title: 'Withdraw',
   description: 'Withdraw from a Lending Circle',
   color: COLORS.DEFAULT_COMMAND,
+  sequentialParams: true,
   params: [createCircleNameParam()],
   fullscreen: true,
   validator: circleNameValidator,
-  preview: function(params, context) {},
+  preview: function(params, context) {
+    var circle = getCircleFromSelection(params.circleName)
+    var balance = circle.getParticipantBalance.call(web3.eth.accounts[0], {from: web3.eth.accounts[0]})
+    var ethBalance = web3.fromWei(balance, 'ether')
+    var balanceColor = ethBalance >= 0 ? COLORS.BALANCE_POSITIVE : COLORS.BALANCE_NEGATIVE
+    return {markup: status.components.view({style: STYLES.COMMAND_PREVIEW}, [
+      status.components.view({style: {flexDirection: 'row', justifyContent: 'space-between'}}, [
+        status.components.text({style: {paddingRight: 20}}, params.circleName),
+        status.components.text({style: {fontWeight: 'bold', color: balanceColor}}, ethBalance + ' ETH')
+      ])
+    ])}
+  },
   handler: function(params, context) {
     status.sendMessage('Hang on, I\'ll just check whether you have anything to withdraw...')
     var circle = getCircleFromSelection(params.circleName)
@@ -524,7 +590,7 @@ var withdrawCommand = {
     status.sendMessage('Pretend that this message is a loading spinner...')
     var receipt = waitForMining(tx)
     if (receipt.failed) return status.sendMessage('Eep, that didn\'t work, maybe you could try again?')
-    status.sendMessage('Awesome, you should now have your Ether, try not to spend it all at once!')
+    status.sendMessage('Withdrawal successful! Try not to spend it all at once!')
   }
 }
 
@@ -533,6 +599,7 @@ var userNameCommand = {
   title: 'SetName',
   color: COLORS.DEFAULT_COMMAND,
   description: 'Set your first name',
+  sequentialParams: true,
   params: [{
     name: 'name',
     placeholder: 'Your first name',
@@ -618,6 +685,7 @@ function saveAllCircles(circles) {
   saveToDb('circles', JSON.stringify(circles))
 }
 
+// lets roll these bad boys out!
 status.response(createCommand)
 status.response(joinCommand)
 status.response(statsCommand)
@@ -626,6 +694,7 @@ status.response(withdrawCommand)
 status.response(contributeCommand)
 status.response(userNameCommand)
 status.response(loadCommand)
+status.response(removeCommand)
 
 status.command(createCommand)
 status.command(joinCommand)
@@ -635,3 +704,4 @@ status.command(withdrawCommand)
 status.command(contributeCommand)
 status.command(userNameCommand)
 status.command(loadCommand)
+status.command(removeCommand)
