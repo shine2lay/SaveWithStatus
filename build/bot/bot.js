@@ -16,6 +16,9 @@
  *      Logged it here: https://github.com/status-im/status-react/issues/1279
  *    - If I `x` out of a transaction on the confirmation screen, I get a nasty error popup, and I'm
  *      not sure on the method of handling that
+ *    - When issuing a command which has a `preview` that takes a long time to render, the
+ *      `suggestions` markup will stay visible until the preview has returned. This looks a bit
+ *      rough around the edges, it would be nice to be able to hide the `suggestions` area on-demand
  *
  *  Some things I would like to see:
  *    - The ability to return custom React Native components in a .sendMessage() function
@@ -135,7 +138,7 @@ function selectCircleSuggestions(params, context) {
       status.components.view({style: textLineStyle}, [
         status.components.text({}, 'If you\'re already a member of a circle, hit '),
         commandTextComponent('/load'),
-        status.components.text({}, ' to bring it into Status.im.')
+        status.components.text({}, 'to bring it into Status.im.')
       ])]
   }
   return {markup: status.components.scrollView({
@@ -150,7 +153,7 @@ function circleNameSuggestions() {
     status.components.text({style: STYLES.SUGGESTIONS_HEADING}, 'Please read the incoming wall of text!'),
     status.components.text({style: {margin: 10}}, 'Thanks for choosing Save With Status. I guarantee you will have a fun time making Lending Circles with your friends.'),
     status.components.text({style: {margin: 10}}, 'You have chosen to create a new Lending Circle. First you should give your Lending Circle a name. Nobody else will see this, so just nickname it however you like. You could call it "Super Status Savings" or something equally rubbish and nobody would know.'),
-    status.components.text({style: {margin: 10}}, 'Then you will be asked to provide the contribution amount. This is the amount of Ether which will be asked of participants each round. Unfortunately we can\'t remind you to contribute, so you might have to do some memory games!'),
+    status.components.text({style: {margin: 10}}, 'Then you will be asked to provide the contribution amount. This is the amount of Ether which will be asked of participants each round. Unfortunately I can\'t remind you to contribute, so you might have to do some memory games!'),
     status.components.text({style: {margin: 10}}, 'Participating in Lending Circles is strictly voluntary. Neither I nor anyone else can force someone to pay up, so make sure you only invite people you already trust.')
   ])
   return {markup: circleNameSuggestions}
@@ -187,7 +190,7 @@ var removeCommand = {
     var circles = getAllCircles()
     circles = deleteCircle(circles, address)
     saveAllCircles(circles)
-    status.sendMessage('Ok, we have removed *' + params.circleName + '*.\n\nHit */load* if you want to add it back again.')
+    status.sendMessage('Ok, I have removed *' + params.circleName + '*.\n\nHit */load* if you want to add it back again.')
   }
 }
 
@@ -237,21 +240,21 @@ var createCommand = {
         status.components.text({style: {fontWeight: 'bold'}}, params.paymentAmount + ' ETH')
       ]),
       status.components.view({style: {paddingTop: 5, marginTop: 5, borderTopColor: COLORS.BORDER, borderTopWidth: 1}}, [
-        status.components.text({}, 'Now that you\'ve created a circle, you\'ll probably want some of your friends to join it.'),
-        status.components.text({}, 'Share the above address (the one which starts with "0x" with your friends, and they will be able to join using the /join command.'),
-        status.components.text({}, 'Once you start the Lending Circle\'s first round with the /start command, nobody else will be able to join'),
+        status.components.text({style: {paddingTop: 5}}, 'Now that you\'ve created a circle, you\'ll probably want some of your friends to join it.'),
+        status.components.text({style: {paddingTop: 5}}, 'Share the above address (the one which starts with "0x") with your friends, and they will be able to join using the /join command.'),
+        status.components.text({style: {paddingTop: 5}}, 'Once you start the Lending Circle\'s first round with the /start command, nobody else will be able to join'),
       ])
     ])}
   },
   handler: function(params, context) {
-    status.sendMessage('Ok, we just need you to confirm that, one sec...')
+    status.sendMessage('Ok, I just need you to confirm that, one sec...')
     var circle = LendingCircle.new(web3.toWei(params.paymentAmount, 'ether'), getMyName(), {
       from: web3.eth.accounts[0],
       data: CIRCLE_BYTECODE
     })
     status.sendMessage('Thanks, it will take a few seconds to deploy *' + params.name + '*.\n\nIf only I actually had hands to put a kettle on, now might be a good time...')
     var receipt = waitForMining(circle.transactionHash)
-    if (receipt.failed) return status.sendMessage('Oh dear, we didn\'t manage to complete that, give it another go.')
+    if (receipt.failed) return status.sendMessage('Oh dear, I didn\'t manage to complete that, give it another go.')
     status.sendMessage('Done! Send your friends the below address and they can join your circle.')
     status.sendMessage(receipt.contractAddress)
     saveNewCircle({name: params.name, address: receipt.contractAddress, participants: [{name: getMyName(), address: web3.eth.accounts[0]}]})
@@ -323,7 +326,7 @@ var joinCommand = {
     if (!web3.isAddress(params.contractAddress)) {
       return {markup: status.components.validationMessage(
         'Not a real contract address',
-        'Maybe you made a typo? We recommend copy & paste.'
+        'Maybe you made a typo? I recommend copy & paste.'
       )}
     }
   },
@@ -336,7 +339,7 @@ var joinCommand = {
     ])}
   },
   handler: function(params, context) {
-    status.sendMessage('Okay, hang on while we try to join *' + params.circleName + '* for you. Shouldn\'t be too long...')
+    status.sendMessage('Okay, hang on while I try to join *' + params.circleName + '* for you. Shouldn\'t be too long...')
     var circle = LendingCircle.at(params.contractAddress)
     var tx = circle.addMember(web3.eth.accounts[0], getMyName(), {from: web3.eth.accounts[0]})
     status.sendMessage('Crunch, whirr, creak...')
@@ -368,7 +371,12 @@ var loadCommand = {
     createCircleNameParam({placeholder: 'Give the Circle a nickname'})
   ],
   preview: function(params, context) {
-    return {markup: status.components.text({style: STYLES.COMMAND_PREVIEW}, 'Load "' + params.circleName + '"')}
+    return {markup: status.components.view({style: STYLES.COMMAND_PREVIEW}, [
+      status.components.view({style: {flexDirection: 'row', justifyContent: 'space-between'}}, [
+        status.components.text({style: {paddingRight: 20}}, 'Load'),
+        status.components.text({style: {fontWeight: 'bold'}}, params.circleName)
+      ])
+    ])}
   },
   handler: function(params, context) {
     status.sendMessage('Ok, fetching that one, give me a moment...')
@@ -634,8 +642,8 @@ var userNameCommand = {
 
 status.addListener('init', function(params, context) {
   if (getFromDb('username') !== null) return
-  status.sendMessage('Welcome (back) to Save With Status, we see you haven\'t set a name yet.')
-  status.sendMessage('Save With Status is supposed to be used with friends, so in order to make using the app totally rad, we recommend setting a nickname, otherwise you will look like this: *' + web3.eth.accounts[0] + '*')
+  status.sendMessage('Oh hello, welcome (back) to Save With Status, I see you haven\'t set a name yet.')
+  status.sendMessage('Save With Status is supposed to be used with friends, so in order to make chatting with me totally rad, I recommend setting a nickname, otherwise you will look like this: *' + web3.eth.accounts[0] + '*')
   status.sendMessage('Hit the */name* command below to tell me your name.')
 })
 
