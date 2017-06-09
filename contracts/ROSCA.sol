@@ -92,16 +92,22 @@ contract ROSCA {
 
     function checkRoundCanAdvance () returns (bool) {
         uint256 roundEndTime = roundStartTime + roundPeriodInSecs;
-        if (now < roundEndTime ) {  // too early to start a new round.
-            return false;
+        if (now >= roundEndTime) {  // too early to start a new round.
+            return true;
         }
         // allow the round To Advance if all members have contributed
+        bool allContributed = true;
         for (uint16 i = 0; i < membersAddresses.length; i++) {
             if (members[membersAddresses[i]].credit < (currentRound * contributionSize)) {
-                return false;
+                allContributed = false;
+                break;
             }
         }
-        return true;
+        if (allContributed) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
