@@ -151,7 +151,7 @@ function selectCircleSuggestions(params, context) {
 function circleNameSuggestions() {
   var circleNameSuggestions = status.components.scrollView({}, [
     status.components.text({style: STYLES.SUGGESTIONS_HEADING}, 'Please read the incoming wall of text!'),
-    status.components.text({style: {margin: 10}}, 'Thanks for choosing Save With Status. I guarantee you will have a fun time making Lending Circles with your friends.'),
+    status.components.text({style: {margin: 10}}, 'Thanks for chatting with me. I guarantee you will have a fun time making Lending Circles with your friends.'),
     status.components.text({style: {margin: 10}}, 'You have chosen to create a new Lending Circle. First you should give your Lending Circle a name. Nobody else will see this, so just nickname it however you like. You could call it "Super Status Savings" or something equally rubbish and nobody would know.'),
     status.components.text({style: {margin: 10}}, 'Then you will be asked to provide the contribution amount. This is the amount of Ether which will be asked of participants each round. Unfortunately I can\'t remind you to contribute, so you might have to do some memory games!'),
     status.components.text({style: {margin: 10}}, 'Participating in Lending Circles is strictly voluntary. Neither I nor anyone else can force someone to pay up, so make sure you only invite people you already trust.')
@@ -642,8 +642,8 @@ var userNameCommand = {
 
 status.addListener('init', function(params, context) {
   if (getFromDb('username') !== null) return
-  status.sendMessage('Oh hello, welcome (back) to Save With Status, I see you haven\'t set a name yet.')
-  status.sendMessage('Save With Status is supposed to be used with friends, so in order to make chatting with me totally rad, I recommend setting a nickname, otherwise you will look like this: *' + web3.eth.accounts[0] + '*')
+  status.sendMessage('Oh hello, welcome (back), I see you haven\'t set a name yet.')
+  status.sendMessage('Trusted Lending Circles are supposed to be used with friends, so in order to make chatting with me totally rad, I recommend setting a nickname, otherwise you will look like this: *' + web3.eth.accounts[0] + '*')
   status.sendMessage('Hit the */name* command below to tell me your name.')
 })
 
