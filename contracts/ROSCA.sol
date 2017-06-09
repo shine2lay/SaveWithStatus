@@ -94,7 +94,7 @@ contract ROSCA {
             return false;
         }
         // allow the round To Advance if all members have contributed
-        for (uint16 i = 0; i < membersAddresses; i++) {
+        for (uint16 i = 0; i < membersAddresses.length; i++) {
             if (members[membersAddresses[i]].credit < (currentRound * contributionSize)) {
                 return false;
             }
@@ -107,7 +107,7 @@ contract ROSCA {
       * If there were no bids during the round, winner is selected semi-randomly.
       * Priority is given to non-delinquent participants.
       */
-    function startRound() onlyIfRoscaNotEnded external returns (bool success) {
+    function startRound() onlyIfRoscaNotEnded returns (bool success) {
         if (!checkRoundCanAdvance()) {
             return false;
         }
