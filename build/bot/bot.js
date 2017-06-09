@@ -3,28 +3,49 @@
  *  I guess that's my fault but there's nothing I can do about it, it's just who I am.
  *  There are some pretty horrible functions, like the while loop on `waitForMining`, and some of
  *  the markup-returning functions are a bit gross, but I blame that on the funky way of creating
- *  React Native components that Status has enforced.
+ *  React Native components that Status has enforced and not at all on my frivolous usage of copy
+ *  and paste without concern for maintainability. I actually really like the component generation
+ *  flow, though the fact that `touchable` components can only accept `view` components as their
+ *  final argument confused me and caused a lot of crashes before I realised. IIRC this is also
+ *  enforced in React Native, but it would be good to have something in the docs which mentions it.
  *
  *  All in all, creating the bot was a very pleasant experience, and I would say that the API, while
  *  still a pretty long way from being completely production-ready, is fully-fledged enough to build
  *  some very powerful applications.
  *
+ *  Any items in the list below which do not have a GitHub link are assumed to be already known to
+ *  the Status team, so I didn't see any value in creating an issue for them.
+ *
  *  Some bugs I think I noticed:
+ *
  *    - If I assign web3.eth.accounts[0] to a variable at the top of this script, the whole thing
  *      kinda dies and I have to delete and re-add the bot to get it to work again
+ *
  *    - Suggestions markup only shows for the first param if you have `sequentialParams: true`.
  *      Logged it here: https://github.com/status-im/status-react/issues/1279
+ *
  *    - If I `x` out of a transaction on the confirmation screen, I get a nasty error popup, and I'm
  *      not sure on the method of handling that
+ *
  *    - When issuing a command which has a `preview` that takes a long time to render, the
  *      `suggestions` markup will stay visible until the preview has returned. This looks a bit
  *      rough around the edges, it would be nice to be able to hide the `suggestions` area on-demand
+ *      Logged here: https://github.com/status-im/status-react/issues/1299
+ *
+ *    - When using `events.SET_VALUE` to add a command to the input text, the suggestions for the
+ *      new command are not shown. You can reproduce this by hitting /remove with no Circles in your
+ *      storage, then clicking on the `/create` command button within the suggestions area.
+ *      Logged here: https://github.com/status-im/status-react/issues/1298
  *
  *  Some things I would like to see:
+ *
  *    - The ability to return custom React Native components in a .sendMessage() function
+ *
  *    - An easier way of ordering any messages arising from `handler` and `preview`. Logged that
  *      here: https://github.com/status-im/status-react/issues/1280
+ *
  *    - Custom JavaScript handlers for the touchable component's onPress properties
+ *
  *    - If not the above, the ability to specify and listen to custom events with `dispatch` and
  *      `addListener`
  */
@@ -74,6 +95,15 @@ var STYLES = {
     fontWeight: 'bold',
     borderRadius: 10,
     backgroundColor: COLORS.TOUCHABLE_BACKGROUND
+  },
+  BUTTON: {
+    padding: 5,
+    borderRadius: 5,
+    backgroundColor: COLORS.TOUCHABLE_BACKGROUND
+  },
+  BUTTON_TEXT: {
+    color: COLORS.TOUCHABLE_TEXT,
+    fontWeight: 'bold'
   }
 }
 
@@ -89,7 +119,10 @@ function createCircleNameParam(optional) {
 }
 
 function commandTextComponent(command) {
-  return status.components.text({style: {fontWeight: 'bold'}}, command)
+  return status.components.touchable(
+      {onPress: status.components.dispatch([status.events.SET_VALUE, command]), style: STYLES.BUTTON},
+      status.components.view({}, [status.components.text({style: STYLES.BUTTON_TEXT}, command)])
+    )
 }
 
 function selectCircleSuggestions(params, context) {
@@ -123,22 +156,21 @@ function selectCircleSuggestions(params, context) {
     )
   })
   if (circles.length === 0) {
-    var textLineStyle = {flexDirection: 'row', paddingLeft: 10, paddingRight: 10, paddingTop: 5, paddingBottom: 5, flexWrap: 'wrap'}
+    // this flexDirection doesn't seem to work on the last view component in here, not sure what is up with that
+    var textLineStyle = {flexDirection: 'row', paddingLeft: 10, paddingRight: 10, paddingTop: 5, paddingBottom: 5, flexWrap: 'wrap', alignItems: 'center'}
     // pretty revolting but what are ya gonna do about it? it's a hackathon not a mr fancy-pantsathon
     components = [status.components.text({style: STYLES.SUGGESTIONS_HEADING}, 'It doesn\'t look like you have joined any Circles yet.'),
       status.components.view({style: textLineStyle}, [
         status.components.text({}, 'To create a circle, hit '),
-        commandTextComponent('/create'),
-        status.components.text({}, ' down below.')
+        commandTextComponent('/create')
       ]),
       status.components.view({style: textLineStyle}, [
         status.components.text({}, 'To join an existing one, hit '),
         commandTextComponent('/join')
       ]),
       status.components.view({style: textLineStyle}, [
-        status.components.text({}, 'If you\'re already a member of a circle, hit '),
-        commandTextComponent('/load'),
-        status.components.text({}, 'to bring it into Status.im.')
+        status.components.text({}, 'If you\'re already a member of a Circle, hit '),
+        commandTextComponent('/load')
       ])]
   }
   return {markup: status.components.scrollView({
@@ -147,14 +179,16 @@ function selectCircleSuggestions(params, context) {
   }, components)}
 }
 
-// I did try to make a function which created this component given a heading and some paragraphs, but it wouldn't work, don't flame pls
+// I did try to make a function which created this component given a heading and some paragraphs,
+// so that we would only need one function below but it wouldn't work, don't flame pls
 function circleNameSuggestions() {
   var circleNameSuggestions = status.components.scrollView({}, [
     status.components.text({style: STYLES.SUGGESTIONS_HEADING}, 'Please read the incoming wall of text!'),
     status.components.text({style: {margin: 10}}, 'Thanks for chatting with me. I guarantee you will have a fun time making Lending Circles with your friends.'),
-    status.components.text({style: {margin: 10}}, 'You have chosen to create a new Lending Circle. First you should give your Lending Circle a name. Nobody else will see this, so just nickname it however you like. You could call it "Super Status Savings" or something equally rubbish and nobody would know.'),
+    status.components.text({style: {margin: 10}}, 'You have chosen to create a new Lending Circle. First you should give your Lending Circle a name. Nobody else will see this, so just nickname it however you like. You could call it "Super Status Savings" or something equally unimaginative and nobody would know.'),
     status.components.text({style: {margin: 10}}, 'Then you will be asked to provide the contribution amount. This is the amount of Ether which will be asked of participants each round. Unfortunately I can\'t remind you to contribute, so you might have to do some memory games!'),
-    status.components.text({style: {margin: 10}}, 'Participating in Lending Circles is strictly voluntary. Neither I nor anyone else can force someone to pay up, so make sure you only invite people you already trust.')
+    status.components.text({style: {margin: 10}}, 'Participating in Lending Circles is strictly voluntary. Neither I nor anyone else can force someone to pay up, so make sure you only invite people you already trust.'),
+    status.components.text({style: {margin: 10}}, 'In this iteration, (for the hackathon), Lending Circle rounds last a minimum of 30 seconds, which means every 30 seconds, someone can start a new round if they like by issuing the /start command. This is for the purposes of demonstration.'),
   ])
   return {markup: circleNameSuggestions}
 }
@@ -167,15 +201,6 @@ function contractAddressSuggestions(params, context) {
   ])
   return {markup: circleNameSuggestions}
 }
-
-function suggestionsFunction(number) {
-  return {markup: status.components.view({}, [status.components.text({}, 'Suggestion ' + number)])}
-}
-
-status.addListener('confirm-delete', function(params, context) {
-  var message = JSON.stringify(params)
-  status.sendMessage(message)
-})
 
 var removeCommand = {
   name: 'remove',
@@ -261,52 +286,6 @@ var createCommand = {
   }
 }
 
-function waitForMining(txHash) {
-  var mined = false
-  var receipt
-  while (!mined) {
-    receipt = web3.eth.getTransactionReceipt(txHash)
-    if (!receipt) continue
-    if (receipt.contractAddress || receipt.gasUsed) mined = true
-    if (receipt.gasUsed === receipt.gasLimit) receipt.failed = true
-  }
-  return receipt
-}
-
-function saveNewCircle(newCircle) {
-  var circles = getAllCircles()
-  if (!Array.isArray(circles)) {
-    circles = []
-  } else if (circleAlreadySaved(circles, newCircle.address)) {
-    circles = deleteCircle(circles, newCircle.address)
-  }
-  circles.push(newCircle)
-  saveAllCircles(circles)
-}
-
-function circleAlreadySaved(circles, newCircleAddress) {
-  return getCircleIndex(circles, newCircleAddress) !== -1
-}
-
-function getCircleIndex(circles, newCircleAddress) {
-  for (var i = 0; i < circles.length; i++) {
-    if (!circles[i].address) return -1
-    if (circles[i].address.toLowerCase() === newCircleAddress.toLowerCase()) return i
-  }
-  return -1
-}
-
-function deleteCircle(circles, circleAddress) {
-  if (getCircleIndex(circles, circleAddress) === -1) return
-  circles.splice(getCircleIndex(circles, circleAddress), 1)
-  return circles
-}
-
-function getMyName() {
-  var name = getFromDb('username')
-  return name || web3.eth.accounts[0]
-}
-
 var joinCommand = {
   name: 'join',
   title: 'Join',
@@ -388,31 +367,6 @@ var loadCommand = {
   }
 }
 
-function parseContractForDb(circle, name) {
-  var participants = getCircleParticipants(circle)
-  var safeCircle = {address: circle.address, name: name, participants: participants}
-  return safeCircle
-}
-
-function getCircleParticipants(circle) {
-  var participantCount = circle.getMemberCount.call({from: web3.eth.accounts[0]})
-  var participants = []
-  for (var i = 0; i < participantCount; i++) {
-    var participantAddress = circle.membersAddresses.call(i, {from: web3.eth.accounts[0]})
-    participants.push({address: participantAddress, name: circle.getUserName.call(i, {from: web3.eth.accounts[0]})})
-  }
-  return participants
-}
-
-function getCircleFromDb(contractAddress) {
-  var circles = getAllCircles()
-  if (!circles) return false
-  for (var i = 0; i < circles.length; i++) {
-    if (circles[i].address.toLowerCase() === contractAddress.toLowerCase()) return circles[i]
-  }
-  return false
-}
-
 var statsCommand = {
   name: 'stats',
   title: 'Stats',
@@ -471,22 +425,6 @@ var statsCommand = {
   },
   handler: function(params, context) {
   }
-}
-
-function getPlusOrMinus(balance) {
-  var ethBalance = web3.fromWei(balance, 'ether')
-  if (ethBalance === 0) return ''
-  var sign = ''
-  if (ethBalance > 0) sign = '+'
-  return sign
-}
-
-function getTotalContributed(circle, participantAddress) {
-  var paymentAmount = circle.contributionSize.call({from: web3.eth.accounts[0]})
-  var balance = circle.getParticipantBalance(participantAddress, {from: web3.eth.accounts[0]})
-  var currentRound = circle.currentRound.call({from: web3.eth.accounts[0]})
-  var totalContributed = web3.fromWei(balance, 'ether').toNumber() + (web3.fromWei(paymentAmount, 'ether') * currentRound)
-  return totalContributed
 }
 
 var contributeCommand = {
@@ -640,16 +578,92 @@ var userNameCommand = {
   }
 }
 
-status.addListener('init', function(params, context) {
-  if (getFromDb('username') !== null) return
-  status.sendMessage('Oh hello, welcome (back), I see you haven\'t set a name yet.')
-  status.sendMessage('Trusted Lending Circles are supposed to be used with friends, so in order to make chatting with me totally rad, I recommend setting a nickname, otherwise you will look like this: *' + web3.eth.accounts[0] + '*')
-  status.sendMessage('Hit the */name* command below to tell me your name.')
-})
+function waitForMining(txHash) {
+  var mined = false
+  var receipt
+  while (!mined) {
+    receipt = web3.eth.getTransactionReceipt(txHash)
+    if (!receipt) continue
+    if (receipt.contractAddress || receipt.gasUsed) mined = true
+    if (receipt.gasUsed === receipt.gasLimit) receipt.failed = true
+  }
+  return receipt
+}
 
-status.addListener('on-message-send', function() {
-  return {'text-message': 'Unfortunately I wasn\'t programmed to have normal conversations. You\'ll have to issue one of the commands below to get me to do anything.'}
-})
+function saveNewCircle(newCircle) {
+  var circles = getAllCircles()
+  if (!Array.isArray(circles)) {
+    circles = []
+  } else if (circleAlreadySaved(circles, newCircle.address)) {
+    circles = deleteCircle(circles, newCircle.address)
+  }
+  circles.push(newCircle)
+  saveAllCircles(circles)
+}
+
+function circleAlreadySaved(circles, newCircleAddress) {
+  return getCircleIndex(circles, newCircleAddress) !== -1
+}
+
+function getCircleIndex(circles, newCircleAddress) {
+  for (var i = 0; i < circles.length; i++) {
+    if (!circles[i].address) return -1
+    if (circles[i].address.toLowerCase() === newCircleAddress.toLowerCase()) return i
+  }
+  return -1
+}
+
+function deleteCircle(circles, circleAddress) {
+  if (getCircleIndex(circles, circleAddress) === -1) return
+  circles.splice(getCircleIndex(circles, circleAddress), 1)
+  return circles
+}
+
+function getMyName() {
+  var name = getFromDb('username')
+  return name || web3.eth.accounts[0]
+}
+
+function getPlusOrMinus(balance) {
+  var ethBalance = web3.fromWei(balance, 'ether')
+  if (ethBalance === 0) return ''
+  var sign = ''
+  if (ethBalance > 0) sign = '+'
+  return sign
+}
+
+function getTotalContributed(circle, participantAddress) {
+  var paymentAmount = circle.contributionSize.call({from: web3.eth.accounts[0]})
+  var balance = circle.getParticipantBalance(participantAddress, {from: web3.eth.accounts[0]})
+  var currentRound = circle.currentRound.call({from: web3.eth.accounts[0]})
+  var totalContributed = web3.fromWei(balance, 'ether').toNumber() + (web3.fromWei(paymentAmount, 'ether') * currentRound)
+  return totalContributed
+}
+
+function parseContractForDb(circle, name) {
+  var participants = getCircleParticipants(circle)
+  var safeCircle = {address: circle.address, name: name, participants: participants}
+  return safeCircle
+}
+
+function getCircleParticipants(circle) {
+  var participantCount = circle.getMemberCount.call({from: web3.eth.accounts[0]})
+  var participants = []
+  for (var i = 0; i < participantCount; i++) {
+    var participantAddress = circle.membersAddresses.call(i, {from: web3.eth.accounts[0]})
+    participants.push({address: participantAddress, name: circle.getUserName.call(i, {from: web3.eth.accounts[0]})})
+  }
+  return participants
+}
+
+function getCircleFromDb(contractAddress) {
+  var circles = getAllCircles()
+  if (!circles) return false
+  for (var i = 0; i < circles.length; i++) {
+    if (circles[i].address.toLowerCase() === contractAddress.toLowerCase()) return circles[i]
+  }
+  return false
+}
 
 function circleNameValidator(params, context) {
   if (!getCircleFromSelection(params.circleName)) {
@@ -692,6 +706,17 @@ function getAllCircles() {
 function saveAllCircles(circles) {
   saveToDb('circles', JSON.stringify(circles))
 }
+
+status.addListener('init', function(params, context) {
+  if (getFromDb('username') !== null) return
+  status.sendMessage('Oh hello, welcome (back), I see you haven\'t set a name yet.')
+  status.sendMessage('Trusted Lending Circles are supposed to be used with friends, so in order to make chatting with me totally rad, I recommend setting a nickname, otherwise you will look like this: *' + web3.eth.accounts[0] + '*')
+  status.sendMessage('Hit the */name* command below to tell me your name.')
+})
+
+status.addListener('on-message-send', function() {
+  return {'text-message': 'Unfortunately I wasn\'t programmed to have normal conversations. You\'ll have to issue one of the commands below to get me to do anything.'}
+})
 
 // lets roll these bad boys out!
 status.response(createCommand)

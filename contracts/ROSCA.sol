@@ -70,7 +70,9 @@ contract ROSCA {
     function ROSCA(
     uint128 contributionSize_,
     string userName) {
-        roundPeriodInSecs = 86400;
+
+        // for the purposes of the demo
+        roundPeriodInSecs = 30;
 
         contributionSize = contributionSize_;
 
