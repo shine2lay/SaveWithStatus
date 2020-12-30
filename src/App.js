@@ -34,10 +34,13 @@ class App extends Component {
     const provider = new Web3.providers.HttpProvider('http://' + host + ':' + port)
     const contract = require('truffle-contract')
     const simpleStorage = contract(SimpleStorageContract)
-    simpleStorage.setProvider(provider)
+    var circles = localStorge.getItem('savewithstatus_circles')
+    console.log(circles)
 
     // Get Web3 so we can get our accounts.
     const web3RPC = new Web3(provider)
+
+    console.log(web3RPC)
 
     // Declaring this for later so we can chain functions on SimpleStorage.
     var simpleStorageInstance
